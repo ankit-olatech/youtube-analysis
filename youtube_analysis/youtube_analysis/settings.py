@@ -38,7 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'youtube_analysis',
-    'rest_framework'
+    'rest_framework',
+    'video_analysis'
 ]
 
 MIDDLEWARE = [
