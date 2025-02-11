@@ -5,6 +5,8 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize, sent_tokenize
 from collections import defaultdict
 import os
+import pytesseract
+from PIL import Image
 
 def extract_frames(video_path, frame_interval=10):
     """
@@ -24,7 +26,27 @@ def extract_frames(video_path, frame_interval=10):
         frame_count += 1
 
     cap.release()
+    print(frames)
     return frames, frame_rate
+def extract_text_from_frames(frames):
+
+    texts = []
+
+    for frame in frames:
+        # Convert the frame to grayscale
+        gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        print("GRAY SCALE", gray_frame)
+        # print("TESTING IMAGE",pytesseract.image_to_string(Image.open('test.png')))
+
+        # Use pytesseract to extract text
+        text = pytesseract.image_to_string(gray_frame)
+        texts.append(text)
+    print(set(texts))
+    print("EXTRACTED TEXTS",texts)
+    # cleaned_texts = {text.replace(" ", "").replace("\n", "").strip() for text in texts}
+    cleaned_texts = {text.replace("\n", "").strip() for text in texts}
+
+    return cleaned_texts # to return only distinct values
 
 def detect_key_moments(frames, threshold=30):
     """
