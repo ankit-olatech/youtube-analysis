@@ -4,13 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouTube Video Analysis</title>
-    <!-- Add Bootstrap CSS (optional) -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="container mt-5">
         <h1>Welcome to the YouTube Video Analysis App</h1>
-        <p>Enter a YouTube video URL to get started.</p>
+        <p>Enter a YouTube video URL or upload a video file to get started.</p>
+
+        <!-- Form for YouTube URL Input -->
+        <form method="post" action="" class="mb-4">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="youtube_url" class="form-label">YouTube Video URL:</label>
+                <input type="url" class="form-control" id="youtube_url" name="youtube_url" placeholder="https://www.youtube.com/watch?v=..." required>
+            </div>
+            <button type="submit" class="btn btn-primary">Analyze YouTube Video</button>
+        </form>
+
+        <!-- Form for Video File Upload -->
+        <form method="post" action="{% url 'analyze_file' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="video_file" class="form-label">Upload Video File:</label>
+                <input type="file" class="form-control" id="video_file" name="video_file" accept="video/*" required>
+            </div>
+            <button type="submit" class="btn btn-secondary">Analyze Uploaded Video</button>
+        </form>
     </div>
 </body>
 </html>
