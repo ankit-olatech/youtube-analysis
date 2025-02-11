@@ -43,104 +43,60 @@ def frame_to_base64(frame):
 
 
 def analyze_file(request):
-
     if request.method == 'POST':
-
         video_file = request.FILES.get('video_file')
 
-
         # Validate file type
-
         if not video_file.name.endswith(('.mp4', '.avi', '.mov', '.mkv')):
-
             return render(request, 'analysis/home.html', {'error': 'Invalid file format. Please upload a video file (mp4, avi, mov, mkv).'})
 
-
         # Save the file temporarily
-
         fs = FileSystemStorage()
-
         filename = fs.save(video_file.name, video_file)
-
         full_file_path = os.path.join(fs.location, filename)
 
-
         # Extract basic metadata
-
         try:
-
             clip = VideoFileClip(full_file_path)
-
             metadata = {
-
                 'file_name': video_file.name,
-
                 'file_size': f"{video_file.size / (1024 * 1024):.2f} MB",
-
                 'duration': f"{clip.duration:.2f} seconds",
-
                 'resolution': f"{clip.size[0]}x{clip.size[1]}",
-
             }
 
-
             # Analyze video content
-
             frames, frame_rate = extract_frames(full_file_path)
-
             key_moments = detect_key_moments(frames)
-
             summary = summarize_text("Sample description for uploaded video.")  # Placeholder for actual description
 
-
             # Add analysis results to metadata
-
             metadata['key_moments'] = key_moments
-
             metadata['summary'] = summary
 
-
             # Extract text from frames
-
             text_extract = extract_text_from_frames(frames)
             print(text_extract)
             print("TEXT EXTRACTED!")
-
             # Convert frames to base64 for rendering
-
             base64_frames = [frame_to_base64(frame) for frame in frames]
 
-
             # Clean up: remove the temporary file after processing
-
             os.remove(full_file_path)
-
             clip.close()
-
-
         except Exception as e:
             print("Error", e)
 
             # Ensure the temporary file is removed even if an error occurs
-
             if os.path.exists(full_file_path):
-
                 os.remove(full_file_path)
-
             return render(request, 'analysis/home.html', {'error': f'Error processing video file: {str(e)}'})
-
-
+        
         # Pass metadata and extracted text to the results template
-
         return render(request, 'analysis/results.html', {
-
             'video_details': metadata,
-
             'frame_capture': base64_frames,
-
             'text_extract': text_extract  # Pass the extracted text to the template
-
         })
-
 
     return redirect('home')
