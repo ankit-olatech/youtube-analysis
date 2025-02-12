@@ -128,6 +128,7 @@ def analyze_thumbnail(thumbnail_path):
     try:
         # Open the image
         img = Image.open(thumbnail_path)
+        print("THUMBNAIL IMAGE", img)
 
         # Check resolution and aspect ratio
         width, height = img.size
@@ -141,8 +142,9 @@ def analyze_thumbnail(thumbnail_path):
         image_format = img.format
 
         # Check for text overlay
-        # Placeholder: Use OCR or manual text detection in the future
-        has_text = False
+        # print(pytesseract.image_to_string(Image.open(img)))
+        if pytesseract.image_to_string(img) != None:
+            has_text = True
 
         # Check for faces (using OpenCV)
         img_cv = cv2.imread(thumbnail_path)
