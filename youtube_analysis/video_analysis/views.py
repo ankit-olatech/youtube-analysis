@@ -55,6 +55,16 @@ def analyze_file(request):
         filename = fs.save(video_file.name, video_file)
         full_file_path = os.path.join(fs.location, filename)
 
+        # THUMBNAIL ANALYSIS
+        thumbnail_file = request.FILES.get('thumbnail_file')
+        print("Thumbnail File:", thumbnail_file)
+        thumbnail_path = None
+        if thumbnail_file:
+            thumbnail_path = os.path.join('media', thumbnail_file.name)
+            with open(thumbnail_path, 'wb+') as destination:
+                for chunk in thumbnail_file.chunks():
+                    destination.write(chunk)
+
         # Extract basic metadata
         try:
             clip = VideoFileClip(full_file_path)
@@ -63,12 +73,23 @@ def analyze_file(request):
                 'file_size': f"{video_file.size / (1024 * 1024):.2f} MB",
                 'duration': f"{clip.duration:.2f} seconds",
                 'resolution': f"{clip.size[0]}x{clip.size[1]}",
+                                'thumbnail_path': thumbnail_path,  # Add thumbnail path to metadata
             }
 
             # Analyze video content
             frames, frame_rate = extract_frames(full_file_path)
             key_moments = detect_key_moments(frames)
-            summary = summarize_text("Sample description for uploaded video.")  # Placeholder for actual description
+            summary = summarize_keywords("Sample description for uploaded video.")  # Placeholder for actual description
+
+            # Analyze thumbnail
+            if thumbnail_path:
+                thumbnail_analysis = analyze_thumbnail(thumbnail_path)
+                metadata['thumbnail_analysis'] = thumbnail_analysis
+
+
+        # Extract basic metadata
+        
+
 
             # Add analysis results to metadata
             metadata['key_moments'] = key_moments

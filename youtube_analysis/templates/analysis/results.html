@@ -32,6 +32,28 @@
         <a href="{% url 'home' %}" class="btn btn-primary">Back to Home</a>
     </div>
     <div class="container mt-5">
+
+    <h2>Thumbnail Analysis</h2>
+{% if video_details.thumbnail_analysis %}
+    <ul>
+        <li><strong>Resolution:</strong> {{ video_details.thumbnail_analysis.resolution }}</li>
+        <li><strong>Aspect Ratio:</strong> {{ video_details.thumbnail_analysis.aspect_ratio }}</li>
+        <li><strong>File Size:</strong> {{ video_details.thumbnail_analysis.file_size }}</li>
+        <li><strong>Format:</strong> {{ video_details.thumbnail_analysis.format }}</li>
+        <li><strong>Has Text:</strong> {{ video_details.thumbnail_analysis.has_text|yesno:"Yes,No" }}</li>
+        <li><strong>Has Faces:</strong> {{ video_details.thumbnail_analysis.has_faces|yesno:"Yes,No" }}</li>
+    </ul>
+    <h3>Suggestions</h3>
+    <ul>
+        {% for suggestion in video_details.thumbnail_analysis.suggestions %}
+            <li>{{ suggestion }}</li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>No thumbnail analysis available.</p>
+{% endif %}
+</div>
+    <div class="container mt-5">
         <h1>Analysis Results</h1>
         {% if frame_capture %}
 
