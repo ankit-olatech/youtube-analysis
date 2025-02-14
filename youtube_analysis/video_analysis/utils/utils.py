@@ -108,9 +108,9 @@ def detect_key_moments(frames, threshold=30):
 
     for i, frame in enumerate(frames):
         if prev_frame is not None:
-            diff = cv2.absdiff(prev_frame, frame)
+            diff = cv2.absdiff(prev_frame, frame) #diff in absolute value of two frame's pixels denoting a change in image
             diff_mean = np.mean(diff)
-            if diff_mean > threshold:
+            if diff_mean > threshold:           #Threshold value denotes the min.diff value after which the pixels are differentiated enough to cause an image change
                 key_moments.append(i)
         prev_frame = frame
 
@@ -143,6 +143,7 @@ def analyze_thumbnail(thumbnail_path):
 
         # Check for text overlay
         # print(pytesseract.image_to_string(Image.open(img)))
+        # Compare extracted thumbnail text to that of the title to compare the relevance of thumbnail wrt to content
         if pytesseract.image_to_string(img) != None:
             has_text = True
 

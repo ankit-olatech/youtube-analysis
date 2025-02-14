@@ -61,11 +61,14 @@
 
         <div>
 
-            {% for frame in frame_capture %}
-
-                <img src="data:image/jpeg;base64,{{ frame }}" alt="Frame" style="width: 50px; height: 50px; margin: 10px;">
-
-            {% endfor %}
+            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                {% for frame in frame_capture %}
+                    <div style="text-align: center;">
+                        <img src="data:image/jpeg;base64,{{ frame }}" alt="Frame" style="width: 50px; height: 50px;">
+                        <span style="display: block; margin-top: 5px;">{{ forloop.counter0 }}</span> <!-- This will print the index starting from 0 -->
+                    </div>
+                {% endfor %}
+            </div>
 
         </div>
 
