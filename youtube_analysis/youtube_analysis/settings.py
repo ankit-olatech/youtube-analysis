@@ -29,6 +29,9 @@ ALLOWED_HOSTS = []
 
 YOUTUBE_API_KEY = 'AIzaSyAGpODyt1xKNaHVEpYIGE05rs19mpaIOYo'
 # YOUTUBE_API_KEY = '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' ranjith sir
+# TEST URL - https://www.googleapis.com/youtube/v3/search?part=snippet&q=cricket&key=AIzaSyAGpODyt1xKNaHVEpYIGE05rs19mpaIOYo
+# TEST URL - https://www.googleapis.com/youtube/v3/search?part=snippet&q=cricket&key=gdiIV4CwfaNL_xdYwdSCOCpQhF43
+
 
 # Application definition
 
