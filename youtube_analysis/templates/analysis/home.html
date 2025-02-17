@@ -12,7 +12,7 @@
         <p>Enter a YouTube video URL or upload a video file to get started.</p>
 
         <!-- Form for YouTube URL Input -->
-        <form method="post" action="" class="mb-4">
+        <form method="post" action="{% url 'analyze_url' %}" class="mb-4">
             {% csrf_token %}
             <div class="mb-3">
                 <label for="youtube_url" class="form-label">YouTube Video URL:</label>

@@ -13,7 +13,112 @@ import string
 import random
 # Ensure you have the necessary NLTK resources
 nltk.download('punkt')
+from googleapiclient.discovery import build
+from django.conf import settings
 
+def fetch_youtube_video_details(video_id):
+    """
+    Fetch metadata and engagement metrics for a YouTube video using its video ID.
+    """
+    youtube = build('youtube', 'v3', developerKey=settings.YOUTUBE_API_KEY)
+    print(youtube)
+    # Fetch video details
+    request = youtube.videos().list(
+        part='snippet,statistics',
+        id=video_id
+    )
+    try:
+        response = request.execute()
+    except Exception as e:
+        print(f"Error fetching video details: {e}")
+        return None
+
+    if not response['items']:
+        return None
+
+    video_data = response['items'][0]
+    snippet = video_data['snippet']
+    statistics = video_data['statistics']
+
+    # Extract relevant details
+    metadata = {
+        'title': snippet['title'],
+        'description': snippet['description'],
+        'tags': snippet.get('tags', []),
+        'upload_date': snippet['publishedAt'],
+        'category_id': snippet['categoryId'],
+        'language': snippet.get('defaultAudioLanguage', ''),
+        'views': statistics.get('viewCount', 0),
+        'likes': statistics.get('likeCount', 0),
+        'dislikes': statistics.get('dislikeCount', 0),
+        'comments': statistics.get('commentCount', 0),
+        'shares': 0,  # Shares are not available via the API
+        'thumbnail_url': snippet['thumbnails']['high']['url'],  # Fetch thumbnail URL
+    }
+
+    return metadata
+def fetch_competitor_videos(keyword, max_results=5):
+    """
+    Fetch competitor videos based on a keyword.
+    """
+    youtube = build('youtube', 'v3', developerKey=settings.YOUTUBE_API_KEY)
+
+    # Search for videos based on the keyword
+    request = youtube.search().list(
+        q=keyword,
+        part='snippet',
+        type='video',
+        maxResults=max_results,
+        order='viewCount'  # Sort by most viewed
+    )
+    response = request.execute()
+
+    competitor_videos = []
+    for item in response['items']:
+        video_id = item['id']['videoId']
+        video_details = fetch_youtube_video_details(video_id)
+        if video_details:
+            competitor_videos.append(video_details)
+
+    return competitor_videos
+
+def fetch_youtube_video_details(video_id):
+    """
+    Fetch metadata, engagement metrics, and thumbnail URL for a YouTube video.
+    """
+    youtube = build('youtube', 'v3', developerKey=settings.YOUTUBE_API_KEY)
+
+    # Fetch video details
+    request = youtube.videos().list(
+        part='snippet,statistics',
+        id=video_id
+    )
+    response = request.execute()
+
+    if not response['items']:
+        return None
+
+    video_data = response['items'][0]
+    snippet = video_data['snippet']
+    statistics = video_data['statistics']
+
+    # Extract relevant details
+    metadata = {
+        'title': snippet['title'],
+        'description': snippet['description'],
+        'tags': snippet.get('tags', []),
+        'upload_date': snippet['publishedAt'],
+        'category_id': snippet['categoryId'],
+        'language': snippet.get('defaultAudioLanguage', ''),
+        'views': statistics.get('viewCount', 0),
+        'likes': statistics.get('likeCount', 0),
+        'dislikes': statistics.get('dislikeCount', 0),
+        'comments': statistics.get('commentCount', 0),
+        'shares': 0,  # Shares are not available via the API
+        'thumbnail_url': snippet['thumbnails']['high']['url'],  # Fetch thumbnail URL
+    }
+
+    return metadata
 def summarize_keywords(keywords_list):
     """
     Summarizes a list of extracted keywords by selecting key themes and generating a human-like summary.

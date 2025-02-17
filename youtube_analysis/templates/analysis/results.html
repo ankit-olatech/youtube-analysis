@@ -27,6 +27,36 @@
         {% endif %}
         <p><strong>Extracted Texts:</strong> Detected at frames {{ text_extract }}</p>
         <h2>Extracted Text</h2>
+        <h2>Competitor Video Comparison</h2>
+        {% if video_details.competitor_videos %}
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Views</th>
+                        <th>Likes</th>
+                        <th>Comments</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for competitor in video_details.competitor_videos %}
+                        <tr>
+                            <td>{{ competitor.title }}</td>
+                            <td>{{ competitor.views }}</td>
+                            <td>{{ competitor.likes }}</td>
+                            <td>{{ competitor.comments }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No competitor videos found.</p>
+        {% endif %}
+    {% else %}
+        <p>No video details available.</p>
+    {% endif %}
+    <a href="{% url 'home' %}" class="btn btn-primary">Back to Home</a>
+</div>
 
 
         <a href="{% url 'home' %}" class="btn btn-primary">Back to Home</a>
