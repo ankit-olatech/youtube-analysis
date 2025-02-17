@@ -79,6 +79,7 @@ def analyze_url(request):
         thumbnail_analysis = analyze_thumbnail(video_details['thumbnail_url'])
         video_details['thumbnail_analysis'] = thumbnail_analysis
         print("TEST 7")
+        
 
         # Pass details to the results template
         return render(request, 'analysis/results.html', {'video_details': video_details})
