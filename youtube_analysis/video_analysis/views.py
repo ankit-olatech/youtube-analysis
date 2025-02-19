@@ -88,114 +88,165 @@ def home(request):
 def frame_to_base64(frame):
     _, buffer = cv2.imencode('.jpg', frame)
     return base64.b64encode(buffer).decode('utf-8')
+# def analyze_url(request):
+
+#     if request.method == 'POST':
+
+#         youtube_url = request.POST.get('youtube_url')
+
+#         print("TEST 1")
+
+
+
+#         # Extract video ID from URL
+
+#         youtube_regex = r'(https?://)?(www\.)?(youtube|youtu|youtube-nocookie)\.(com|be)/(watch\?v=|embed/|v/|.+\?v=)?([^&=%\?]{11})'
+
+#         match = re.match(youtube_regex, youtube_url)
+
+#         print("TEST 2")
+
+
+#         if not match:
+
+#             return render(request, 'analysis/home.html', {'error': 'Invalid YouTube URL. Please enter a valid URL.'})
+
+
+#         video_id = match.group(6)
+
+#         print("TEST 3")
+
+#         print(video_id)
+
+
+#         # Fetch video details
+
+#         video_details = fetch_youtube_video_details(video_id)
+
+#         if not video_details:
+
+#             return render(request, 'analysis/home.html', {'error': 'Unable to fetch video details. Please check the URL.'})
+
+
+#         # Download the video using yt-dlp
+
+#         output_path = 'media/%(title)s.%(ext)s'  # Specify the output path and filename format
+
+#         try:
+
+#             subprocess.run(['yt-dlp', '-o', output_path, youtube_url], check=True)
+
+#             print("Video downloaded successfully.")
+
+#         except subprocess.CalledProcessError as e:
+
+#             return render(request, 'analysis/home.html', {'error': f'Error downloading video: {str(e)}'})
+
+
+#         # Assuming the video file is saved in the media directory
+
+#         # You may need to adjust the filename based on the output format
+
+#         video_filename = f"media/{video_details['title']}.mp4"  # Adjust this based on the actual downloaded filename
+
+
+#         # Analyze video content
+
+#         frames, frame_rate = extract_frames(video_filename)
+
+#         key_moments = detect_key_moments(frames)
+
+#         summary = summarize_keywords(video_details['description'])
+
+#         print("TEST 5")
+
+
+#         # Extract keywords for competitor search
+
+#         keywords = summarize_keywords(video_details['title'] + ' ' + video_details['description'])
+
+#         competitor_videos = fetch_competitor_videos(' '.join(keywords))
+
+#         print("TEST 6")
+
+
+#         # Add analysis results to video_details
+
+#         video_details['key_moments'] = key_moments
+
+#         video_details['summary'] = summary
+
+#         video_details['competitor_videos'] = competitor_videos
+
+#         # Convert frames to base64 for rendering
+#         base64_frames = [frame_to_base64(frame) for frame in frames]
+
+
+#         # Analyze thumbnail
+
+#         thumbnail_analysis = analyze_thumbnail(video_details['thumbnail_url'])
+
+#         video_details['thumbnail_analysis'] = thumbnail_analysis
+
+#         print("TEST 7")
+
+
+#         # Pass details to the results template
+
+
+#         return render(request, 'analysis/results.html', {'video_details': video_details, 'frame_capture': base64_frames})
+
+
+#     return redirect('home')
+
 def analyze_url(request):
-
     if request.method == 'POST':
-
         youtube_url = request.POST.get('youtube_url')
-
-        print("TEST 1")
-
-
-
-        # Extract video ID from URL
-
         youtube_regex = r'(https?://)?(www\.)?(youtube|youtu|youtube-nocookie)\.(com|be)/(watch\?v=|embed/|v/|.+\?v=)?([^&=%\?]{11})'
-
         match = re.match(youtube_regex, youtube_url)
 
-        print("TEST 2")
-
-
         if not match:
-
             return render(request, 'analysis/home.html', {'error': 'Invalid YouTube URL. Please enter a valid URL.'})
-
 
         video_id = match.group(6)
 
-        print("TEST 3")
-
-        print(video_id)
-
-
         # Fetch video details
-
         video_details = fetch_youtube_video_details(video_id)
-
         if not video_details:
-
             return render(request, 'analysis/home.html', {'error': 'Unable to fetch video details. Please check the URL.'})
 
+        # Fetch comment analysis
+        comment_data = fetch_youtube_comments(video_id)
+        video_details["comment_count"] = comment_data["total_comments"]
+        video_details["comment_sentiment"] = comment_data["sentiment_analysis"]
 
         # Download the video using yt-dlp
-
-        output_path = 'media/%(title)s.%(ext)s'  # Specify the output path and filename format
-
+        output_path = 'media/%(title)s.%(ext)s'
         try:
-
             subprocess.run(['yt-dlp', '-o', output_path, youtube_url], check=True)
-
-            print("Video downloaded successfully.")
-
         except subprocess.CalledProcessError as e:
-
             return render(request, 'analysis/home.html', {'error': f'Error downloading video: {str(e)}'})
 
-
-        # Assuming the video file is saved in the media directory
-
-        # You may need to adjust the filename based on the output format
-
-        video_filename = f"media/{video_details['title']}.mp4"  # Adjust this based on the actual downloaded filename
-
+        video_filename = f"media/{video_details['title']}.mp4"
 
         # Analyze video content
-
         frames, frame_rate = extract_frames(video_filename)
-
         key_moments = detect_key_moments(frames)
-
         summary = summarize_keywords(video_details['description'])
-
-        print("TEST 5")
-
-
-        # Extract keywords for competitor search
-
         keywords = summarize_keywords(video_details['title'] + ' ' + video_details['description'])
-
         competitor_videos = fetch_competitor_videos(' '.join(keywords))
 
-        print("TEST 6")
-
-
-        # Add analysis results to video_details
-
-        video_details['key_moments'] = key_moments
-
-        video_details['summary'] = summary
-
-        video_details['competitor_videos'] = competitor_videos
+        video_details.update({
+            "key_moments": key_moments,
+            "summary": summary,
+            "competitor_videos": competitor_videos,
+            "thumbnail_analysis": analyze_thumbnail(video_details['thumbnail_url'])
+        })
 
         # Convert frames to base64 for rendering
         base64_frames = [frame_to_base64(frame) for frame in frames]
 
-
-        # Analyze thumbnail
-
-        thumbnail_analysis = analyze_thumbnail(video_details['thumbnail_url'])
-
-        video_details['thumbnail_analysis'] = thumbnail_analysis
-
-        print("TEST 7")
-
-
-        # Pass details to the results template
-
-
         return render(request, 'analysis/results.html', {'video_details': video_details, 'frame_capture': base64_frames})
-
 
     return redirect('home')
 

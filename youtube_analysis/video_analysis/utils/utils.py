@@ -13,8 +13,15 @@ import string
 import random
 # Ensure you have the necessary NLTK resources
 nltk.download('punkt')
+# Sentiment Analysis
+nltk.download('vader_lexicon')
 from googleapiclient.discovery import build
 from django.conf import settings
+import re
+import subprocess
+import googleapiclient.discovery
+import nltk
+from nltk.sentiment import SentimentIntensityAnalyzer
 
 def fetch_youtube_video_details(video_id):
     """
@@ -282,3 +289,49 @@ def analyze_thumbnail(thumbnail_path):
         }
     except Exception as e:
         return {'error': f'Error analyzing thumbnail: {str(e)}'}
+    
+# Comment Sentiment Analysis
+def fetch_youtube_comments(video_id, max_comments=100):
+    """
+    Fetches YouTube comments for a given video ID and performs sentiment analysis.
+    
+    Args:
+        video_id (str): The ID of the YouTube video.
+        max_comments (int): The maximum number of comments to fetch.
+    
+    Returns:
+        dict: Contains total comment count and sentiment analysis summary.
+    """
+    youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=settings.YOUTUBE_API_KEY)
+
+    # Get video statistics to fetch the total comment count
+    video_response = youtube.videos().list(part="statistics", id=video_id).execute()
+    total_comments = int(video_response["items"][0]["statistics"].get("commentCount", 0))
+
+    comments = []
+    request = youtube.commentThreads().list(part="snippet", videoId=video_id, maxResults=max_comments)
+    
+    while request and len(comments) < max_comments:
+        response = request.execute()
+        for item in response.get("items", []):
+            comment_text = item["snippet"]["topLevelComment"]["snippet"]["textDisplay"]
+            comments.append(comment_text)
+        request = youtube.commentThreads().list_next(request, response)
+
+    # Perform Sentiment Analysis
+    sia = SentimentIntensityAnalyzer()
+    sentiment_scores = {"positive": 0, "neutral": 0, "negative": 0}
+
+    for comment in comments:
+        score = sia.polarity_scores(comment)["compound"]
+        if score >= 0.05:
+            sentiment_scores["positive"] += 1
+        elif score <= -0.05:
+            sentiment_scores["negative"] += 1
+        else:
+            sentiment_scores["neutral"] += 1
+
+    return {
+        "total_comments": total_comments,
+        "sentiment_analysis": sentiment_scores
+    }
