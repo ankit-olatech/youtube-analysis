@@ -22,6 +22,7 @@ import subprocess
 import googleapiclient.discovery
 import nltk
 from nltk.sentiment import SentimentIntensityAnalyzer
+import io
 
 def fetch_youtube_video_details(video_id):
     """
@@ -334,4 +335,85 @@ def fetch_youtube_comments(video_id, max_comments=100):
     return {
         "total_comments": total_comments,
         "sentiment_analysis": sentiment_scores
+    }
+
+# Clickbait Analysis
+# # List of common clickbait words
+CLICKBAIT_WORDS = [
+    "shocking", "amazing", "you won’t believe", "mind-blowing", "insane", 
+    "crazy", "must-watch", "top 10", "gone wrong", "the truth about", "biggest ever"
+]
+
+def calculate_clickbait_index(video_id):
+    """
+    Calculates the Clickbait Index (0-100%) for a YouTube video based on title, thumbnail, description, and engagement.
+    
+    Args:
+        video_id (str): The YouTube video ID.
+    
+    Returns:
+        float: Clickbait score percentage (0-100).
+    """
+    youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=settings.YOUTUBE_API_KEY)
+
+    # Fetch video details
+    video_response = youtube.videos().list(part="snippet,statistics", id=video_id).execute()
+    
+    if not video_response["items"]:
+        return {"error": "Invalid video ID or video not found"}
+
+    video_info = video_response["items"][0]["snippet"]
+    video_stats = video_response["items"][0]["statistics"]
+
+    title = video_info["title"].lower()
+    description = video_info["description"].lower()
+    thumbnail_url = video_info["thumbnails"]["high"]["url"]
+    
+    views = int(video_stats.get("viewCount", 0))
+    likes = int(video_stats.get("likeCount", 0)) if "likeCount" in video_stats else 0
+
+    # ------ 1. Title Clickbait Score (40%) ------
+    title_score = sum(1 for word in CLICKBAIT_WORDS if word in title) / len(CLICKBAIT_WORDS)
+    title_clickbait = title_score * 40
+
+    # ------ 2. Description Clickbait Score (20%) ------
+    description_score = sum(1 for word in CLICKBAIT_WORDS if word in description) / len(CLICKBAIT_WORDS)
+    description_clickbait = description_score * 20
+
+    # ------ 3. Thumbnail Clickbait Score (30%) ------
+    try:
+        image = io.imread(thumbnail_url)
+        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+
+        # Edge detection for exaggerated outlines
+        edges = cv2.Canny(gray, 100, 200)
+
+        # Count white pixels (high contrast detection)
+        edge_ratio = np.sum(edges) / (gray.shape[0] * gray.shape[1])
+        thumbnail_clickbait = min(edge_ratio * 150, 30)  # Cap at 30%
+    except Exception as e:
+        thumbnail_clickbait = 10  # Default value if thumbnail processing fails
+
+    # ------ 4. Like-to-View Ratio Clickbait Score (10%) ------
+    engagement_ratio = (likes / views) if views > 0 else 0
+    if engagement_ratio < 0.01:  # If likes are very low compared to views
+        engagement_score = 10
+    elif engagement_ratio < 0.05:
+        engagement_score = 5
+    else:
+        engagement_score = 0
+
+    # ------ Final Clickbait Index ------
+    clickbait_index = round(title_clickbait + description_clickbait + thumbnail_clickbait + engagement_score, 2)
+    clickbait_index = min(clickbait_index, 100)  # Ensure it's capped at 100%
+
+    return {
+        "title": title,
+        "clickbait_index": clickbait_index,
+        "details": {
+            "title_clickbait": round(title_clickbait, 2),
+            "description_clickbait": round(description_clickbait, 2),
+            "thumbnail_clickbait": round(thumbnail_clickbait, 2),
+            "engagement_score": round(engagement_score, 2)
+        }
     }

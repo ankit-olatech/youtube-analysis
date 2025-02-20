@@ -81,6 +81,16 @@
     <p>No thumbnail analysis available.</p>
 {% endif %}
 </div>
+<div class="container mt-5">
+<h2>Clickbait Analysis</h2>
+<p>Clickbait Index: {{ video_details.clickbait_index }}%</p>
+<ul>
+    <li>Title Clickbait Score: {{ video_details.clickbait_details.title_clickbait }}%</li>
+    <li>Description Clickbait Score: {{ video_details.clickbait_details.description_clickbait }}%</li>
+    <li>Thumbnail Clickbait Score: {{ video_details.clickbait_details.thumbnail_clickbait }}%</li>
+    <li>Engagement Score: {{ video_details.clickbait_details.engagement_score }}%</li>
+</ul>
+</div>
     <div class="container mt-5">
         <h1>Analysis Results</h1>
         {% if frame_capture %}

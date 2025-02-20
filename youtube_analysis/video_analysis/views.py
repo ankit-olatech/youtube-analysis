@@ -219,6 +219,11 @@ def analyze_url(request):
         comment_data = fetch_youtube_comments(video_id)
         video_details["comment_count"] = comment_data["total_comments"]
         video_details["comment_sentiment"] = comment_data["sentiment_analysis"]
+        print("Clickbait Analysis Done")
+        # Calculate Clickbait Index
+        clickbait_analysis = calculate_clickbait_index(video_id)
+        video_details["clickbait_index"] = clickbait_analysis["clickbait_index"]
+        video_details["clickbait_details"] = clickbait_analysis["details"]
 
         # Download the video using yt-dlp
         output_path = 'media/%(title)s.%(ext)s'
@@ -249,7 +254,6 @@ def analyze_url(request):
         return render(request, 'analysis/results.html', {'video_details': video_details, 'frame_capture': base64_frames})
 
     return redirect('home')
-
 
 
 def analyze_file(request):
