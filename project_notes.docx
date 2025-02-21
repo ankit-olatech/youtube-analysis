@@ -73,3 +73,6 @@ data, samplerate = sf.read('audio.wav')
 
 HOOK MOMENTS LOGIC
 This can include asking a provocative question, showing a surprising visual, stating a shocking fact, using humor, or teasing the main topic of the video. 
+
+
+7. Some video files frame arent captured maybe due to missing codecs such as ffmpeg

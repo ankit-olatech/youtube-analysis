@@ -23,6 +23,9 @@ from pytube import YouTube
 
 from django.conf import settings
 import requests
+from django.template.loader import render_to_string
+from django.http import HttpResponse
+from weasyprint import HTML
 developerKey=settings.YOUTUBE_API_KEY
 
 
@@ -219,11 +222,11 @@ def analyze_url(request):
         comment_data = fetch_youtube_comments(video_id)
         video_details["comment_count"] = comment_data["total_comments"]
         video_details["comment_sentiment"] = comment_data["sentiment_analysis"]
-        print("Clickbait Analysis Done")
         # Calculate Clickbait Index
         clickbait_analysis = calculate_clickbait_index(video_id)
         video_details["clickbait_index"] = clickbait_analysis["clickbait_index"]
         video_details["clickbait_details"] = clickbait_analysis["details"]
+        print("Clickbait Analysis Done")
 
         # Download the video using yt-dlp
         output_path = 'media/%(title)s.%(ext)s'
@@ -233,6 +236,7 @@ def analyze_url(request):
             return render(request, 'analysis/home.html', {'error': f'Error downloading video: {str(e)}'})
 
         video_filename = f"media/{video_details['title']}.mp4"
+        print("Video Download Done")
 
         # Analyze video content
         frames, frame_rate = extract_frames(video_filename)
@@ -245,11 +249,14 @@ def analyze_url(request):
             "key_moments": key_moments,
             "summary": summary,
             "competitor_videos": competitor_videos,
-            "thumbnail_analysis": analyze_thumbnail(video_details['thumbnail_url'])
+            "thumbnail_analysis": analyze_thumbnail(video_details['thumbnail_url']),
+                'generate_pdf': True  # Flag to indicate PDF generation option
         })
 
         # Convert frames to base64 for rendering
         base64_frames = [frame_to_base64(frame) for frame in frames]
+        print("Frame Extraction Done")
+
 
         return render(request, 'analysis/results.html', {'video_details': video_details, 'frame_capture': base64_frames})
 
@@ -335,3 +342,40 @@ def analyze_file(request):
         })
 
     return redirect('home')
+# PDF REPORT SUMMARY
+
+
+def generate_pdf_report(video_details, frame_capture):
+    """
+    Generate a PDF report from the video analysis results.
+
+    Args:
+        video_details (dict): The details of the video analysis.
+        frame_capture (list): List of frames captured from the video.
+
+    Returns:
+        HttpResponse: A response containing the PDF file.
+    """
+    # Render the HTML template with the video details
+    html_string = render_to_string('analysis/pdf_report.html', {
+        'video_details': video_details,
+        'frame_capture': frame_capture,
+    })
+
+    # Create a PDF from the HTML
+    pdf = HTML(string=html_string).write_pdf()
+
+    # Create an HTTP response with the PDF
+    response = HttpResponse(pdf, content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="video_analysis_report.pdf"'
+    return response
+
+def pdf_report_view(request):
+
+    if request.method == 'POST':
+
+        video_details = request.POST.get('video_details')  # Get video details from the request
+
+        frame_capture = request.POST.get('frame_capture')  # Get frame captures from the request
+
+        return generate_pdf_report(video_details, frame_capture)
