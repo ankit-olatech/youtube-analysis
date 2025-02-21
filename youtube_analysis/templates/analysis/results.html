@@ -14,17 +14,6 @@
 {{ frame_capture|json_script:'frame-capture' }}
 
 
-<form id="pdfReportForm" method="post" action="{% url 'pdf_report' %}">
-
-    {% csrf_token %}
-
-    <input type="hidden" name="video_details" id="videoDetails">
-
-    <input type="hidden" name="frame_capture" id="frameCapture">
-
-    <button type="submit">Download PDF Report</button>
-
-</form>
 
 
 <script>

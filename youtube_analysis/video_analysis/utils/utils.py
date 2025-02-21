@@ -169,26 +169,69 @@ def summarize_keywords(keywords_list):
         )
 
     return summary
+
+import logging
 def extract_frames(video_path, frame_interval=7):
+
     """
+
     Extract frames from the video at a specified interval.
+
     """
+
     frames = []
+
+
+    if not os.path.exists(video_path):
+
+        logging.error(f"Video file does not exist: {video_path}")
+
+        return None, 0
+
+
     cap = cv2.VideoCapture(video_path)
+    print(cap)
+
+
+    if not cap.isOpened():
+
+        logging.error(f"Could not open video file: {video_path}")
+
+        return None, 0  # Return None for frames and 0 for frame rate
+
+
     frame_rate = int(cap.get(cv2.CAP_PROP_FPS))
+
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
     frame_count = 0
 
+
+    logging.info(f"Total frames in video: {total_frames}, Frame rate: {frame_rate}")
+
+
     while cap.isOpened():
+
         ret, frame = cap.read()
+
         if not ret:
+
+            logging.warning("Could not read frame or end of video reached.")
+
             break
+
         if frame_count % frame_interval == 0:
+
             frames.append(frame)
+
         frame_count += 1
 
+
     cap.release()
-    print(frames)
-    return frames, frame_rate
+
+    logging.info(f"Extracted {len(frames)} frames from {video_path}")
+
+    return frames, frame_rate  # Return the frames and frame rate
 def extract_text_from_frames(frames):
 
     texts = []

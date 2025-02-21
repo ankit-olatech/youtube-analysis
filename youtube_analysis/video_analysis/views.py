@@ -231,7 +231,7 @@ def analyze_url(request):
         # Download the video using yt-dlp
         output_path = 'media/%(title)s.%(ext)s'
         try:
-            subprocess.run(['yt-dlp', '-o', output_path, youtube_url], check=True)
+            subprocess.run(['yt-dlp', '-f', 'best[ext=mp4]', '-o', output_path, youtube_url], check=True)
         except subprocess.CalledProcessError as e:
             return render(request, 'analysis/home.html', {'error': f'Error downloading video: {str(e)}'})
 
