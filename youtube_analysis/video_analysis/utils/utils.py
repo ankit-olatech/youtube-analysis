@@ -23,6 +23,7 @@ import googleapiclient.discovery
 import nltk
 from nltk.sentiment import SentimentIntensityAnalyzer
 import io
+from deepface import DeepFace
 
 def fetch_youtube_video_details(video_id):
     """
@@ -232,51 +233,82 @@ def detect_key_moments(frames, threshold=30):
 
 
 # THUMBNAIL ANALYSIS
-
-
 def analyze_thumbnail(thumbnail_path):
     """
-    Analyze a thumbnail for compliance with YouTube's guidelines and provide optimization suggestions.
+    Analyze a thumbnail for compliance with YouTube's guidelines and provide an optimization score (0-100).
     """
     try:
         # Open the image
         img = Image.open(thumbnail_path)
-        print("THUMBNAIL IMAGE", img)
-
-        # Check resolution and aspect ratio
         width, height = img.size
         resolution = f"{width}x{height}"
         aspect_ratio = width / height
 
         # Check file size
         file_size = os.path.getsize(thumbnail_path) / (1024 * 1024)  # Size in MB
-
-        # Check image format
         image_format = img.format
 
         # Check for text overlay
-        # print(pytesseract.image_to_string(Image.open(img)))
-        # Compare extracted thumbnail text to that of the title to compare the relevance of thumbnail wrt to content
-        if pytesseract.image_to_string(img) != None:
-            has_text = True
+        extracted_text = pytesseract.image_to_string(img)
+        has_text = bool(extracted_text.strip())
 
-        # Check for faces (using OpenCV)
+        # Load image for OpenCV processing
         img_cv = cv2.imread(thumbnail_path)
         gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
+
+        # Detect faces using OpenCV
         face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
         has_faces = len(faces) > 0
 
-        # Generate suggestions
-        suggestions = []
+        # ---- Detect Facial Expressions (Exaggerated Emotions) ----
+        exaggerated_expression = False
+        if has_faces:
+            analysis = DeepFace.analyze(img_path=thumbnail_path, actions=['emotion'], enforce_detection=False)
+            dominant_emotion = analysis[0]['dominant_emotion']
+            exaggerated_emotions = ['surprise', 'fear', 'angry']
+            if dominant_emotion in exaggerated_emotions:
+                exaggerated_expression = True
+
+        # ---- Detect Misleading Elements (Red/Yellow Overuse) ----
+        hsv = cv2.cvtColor(img_cv, cv2.COLOR_BGR2HSV)
+        lower_red = np.array([0, 120, 70])
+        upper_red = np.array([10, 255, 255])
+        red_mask = cv2.inRange(hsv, lower_red, upper_red)
+        red_percentage = np.sum(red_mask) / (img_cv.shape[0] * img_cv.shape[1])
+
+        lower_yellow = np.array([20, 100, 100])
+        upper_yellow = np.array([30, 255, 255])
+        yellow_mask = cv2.inRange(hsv, lower_yellow, upper_yellow)
+        yellow_percentage = np.sum(yellow_mask) / (img_cv.shape[0] * img_cv.shape[1])
+
+        high_red_yellow = red_percentage > 0.15 or yellow_percentage > 0.15  # Threshold for excessive color use
+
+        # ---- Detect High Contrast Elements (Fake Arrows, Outlines) ----
+        edges = cv2.Canny(gray, 100, 200)
+        edge_ratio = np.sum(edges) / (gray.shape[0] * gray.shape[1])
+        misleading_elements = edge_ratio > 0.1  # High contrast threshold
+
+        # ---- Generate Compliance Score ----
+        compliance_score = 100
+        deductions = []
         if aspect_ratio != 16 / 9:
-            suggestions.append("Aspect ratio should be 16:9.")
+            compliance_score -= 10
+            deductions.append("Aspect ratio should be 16:9.")
         if file_size > 2:
-            suggestions.append("File size should not exceed 2MB.")
-        if not has_text:
-            suggestions.append("Consider adding text overlay for better engagement.")
-        if not has_faces:
-            suggestions.append("Consider including faces for better engagement.")
+            compliance_score -= 10
+            deductions.append("File size should not exceed 2MB.")
+        if exaggerated_expression:
+            compliance_score -= 20
+            deductions.append("Exaggerated facial expressions detected (shock, fear, or anger).")
+        if high_red_yellow:
+            compliance_score -= 20
+            deductions.append("Excessive use of red/yellow detected, which may be misleading.")
+        if misleading_elements:
+            compliance_score -= 20
+            deductions.append("High contrast elements detected (possible arrows, outlines, or fake elements).")
+
+        compliance_score = max(compliance_score, 0)  # Ensure it doesn’t go below 0
 
         # Return analysis results
         return {
@@ -286,7 +318,11 @@ def analyze_thumbnail(thumbnail_path):
             'format': image_format,
             'has_text': has_text,
             'has_faces': has_faces,
-            'suggestions': suggestions,
+            'exaggerated_expression': exaggerated_expression,
+            'high_red_yellow': high_red_yellow,
+            'misleading_elements': misleading_elements,
+            'compliance_score': compliance_score,
+            'deductions': deductions,
         }
     except Exception as e:
         return {'error': f'Error analyzing thumbnail: {str(e)}'}
