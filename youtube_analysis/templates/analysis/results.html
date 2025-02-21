@@ -9,31 +9,7 @@
 <body>
 <!-- Create script tags for JSON data -->
 
-{{ video_details|json_script:'video-details' }}
 
-{{ frame_capture|json_script:'frame-capture' }}
-
-
-
-
-<script>
-
-    document.getElementById('pdfReportForm').addEventListener('submit', function() {
-
-        // Retrieve JSON data from the script tags
-
-        const videoDetails = JSON.parse(document.getElementById('video-details').textContent);
-
-        const frameCapture = JSON.parse(document.getElementById('frame-capture').textContent);
-
-
-        // Set the values of the hidden inputs
-
-        document.getElementById('videoDetails').value = JSON.stringify(videoDetails);
-
-        document.getElementById('frameCapture').value = JSON.stringify(frameCapture);
-
-    });
 
 </script>
     <div class="container mt-5">
@@ -103,7 +79,7 @@
     </ul>
     <h3>Suggestions</h3>
     <ul>
-        {% for suggestion in video_details.thumbnail_analysis.suggestions %}
+        {% for suggestion in video_details.thumbnail_analysis.deductions %}
             <li>{{ suggestion }}</li>
         {% endfor %}
     </ul>

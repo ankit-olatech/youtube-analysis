@@ -222,6 +222,7 @@ def analyze_url(request):
         comment_data = fetch_youtube_comments(video_id)
         video_details["comment_count"] = comment_data["total_comments"]
         video_details["comment_sentiment"] = comment_data["sentiment_analysis"]
+        
         # Calculate Clickbait Index
         clickbait_analysis = calculate_clickbait_index(video_id)
         video_details["clickbait_index"] = clickbait_analysis["clickbait_index"]
@@ -244,24 +245,38 @@ def analyze_url(request):
         summary = summarize_keywords(video_details['description'])
         keywords = summarize_keywords(video_details['title'] + ' ' + video_details['description'])
         competitor_videos = fetch_competitor_videos(' '.join(keywords))
+        print("STARTING THUMBNAIL ANALAYSIS")
+        # Handle thumbnail analysis
+        thumbnail_analysis = {}
+        if 'thumbnail_file' in request.FILES:
+            # If a thumbnail file is uploaded
+            thumbnail_file = request.FILES['thumbnail_file']
+            print("THUMBNAIL", thumbnail_file)
+            thumbnail_path = f'media/{thumbnail_file.name}'
+            with open(thumbnail_path, 'wb+') as destination:
+                for chunk in thumbnail_file.chunks():
+                    destination.write(chunk)
+            thumbnail_analysis = analyze_thumbnail(thumbnail_path)
+        else:
+            # Fetch thumbnail from YouTube
+            thumbnail_url = video_details['thumbnail_url']
+            thumbnail_analysis = analyze_thumbnail(thumbnail_url)
 
         video_details.update({
             "key_moments": key_moments,
             "summary": summary,
             "competitor_videos": competitor_videos,
-            "thumbnail_analysis": analyze_thumbnail(video_details['thumbnail_url']),
-                'generate_pdf': True  # Flag to indicate PDF generation option
+            "thumbnail_analysis": thumbnail_analysis,
+            'generate_pdf': True  # Flag to indicate PDF generation option
         })
 
         # Convert frames to base64 for rendering
         base64_frames = [frame_to_base64(frame) for frame in frames]
         print("Frame Extraction Done")
 
-
         return render(request, 'analysis/results.html', {'video_details': video_details, 'frame_capture': base64_frames})
 
     return redirect('home')
-
 
 def analyze_file(request):
     if request.method == 'POST':
