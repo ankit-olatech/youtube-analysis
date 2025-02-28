@@ -169,3 +169,7 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+
+# Media Directory - Added manually
+youtube_analysis/media
