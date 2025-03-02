@@ -8,6 +8,8 @@
 </head>
 <body>
     <div class="container mt-5">
+    <a href="{% url 'home' %}" class="btn btn-primary">Back to Home</a>
+
         <h1>Analysis Results</h1>
         {% if video_details %}
             <h2>Video Metadata</h2>
@@ -28,36 +30,34 @@
         <p><strong>Extracted Texts:</strong> Detected at frames {{ text_extract }}</p>
         <h2>Extracted Text</h2>
         <h2>Competitor Video Comparison</h2>
-        {% if video_details.competitor_videos %}
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Title</th>
-                        <th>Views</th>
-                        <th>Likes</th>
-                        <th>Comments</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for competitor in video_details.competitor_videos %}
+            {% if video_details.competitor_videos %}
+                <table class="table table-bordered">
+                    <thead>
                         <tr>
-                            <td>{{ competitor.title }}</td>
-                            <td>{{ competitor.views }}</td>
-                            <td>{{ competitor.likes }}</td>
-                            <td>{{ competitor.comments }}</td>
+                            <th>Title</th>
+                            <th>Views</th>
+                            <th>Likes</th>
+                            <th>Comments</th>
                         </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <p>No competitor videos found.</p>
-        {% endif %}
+                    </thead>
+                    <tbody>
+                        {% for competitor in video_details.competitor_videos %}
+                            <tr>
+                                <td>{{ competitor.title }}</td>
+                                <td>{{ competitor.views }}</td>
+                                <td>{{ competitor.likes }}</td>
+                                <td>{{ competitor.comments }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>No competitor videos found.</p>
+            {% endif %}
 
-    <a href="{% url 'home' %}" class="btn btn-primary">Back to Home</a>
 </div>
 
 
-        <a href="{% url 'home' %}" class="btn btn-primary">Back to Home</a>
     </div>
     <div class="container mt-5">
 

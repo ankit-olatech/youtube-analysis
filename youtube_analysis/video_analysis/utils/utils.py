@@ -11,10 +11,7 @@ from collections import defaultdict
 import nltk
 import string
 import random
-# Ensure you have the necessary NLTK resources
-nltk.download('punkt')
-# Sentiment Analysis
-nltk.download('vader_lexicon')
+from nltk.tokenize import word_tokenize
 from googleapiclient.discovery import build
 from django.conf import settings
 import re
@@ -23,6 +20,11 @@ import googleapiclient.discovery
 import nltk
 from nltk.sentiment import SentimentIntensityAnalyzer
 import io
+# Ensure you have the necessary NLTK resources
+nltk.download('punkt')
+nltk.download('punkt_tab')
+# Sentiment Analysis
+nltk.download('vader_lexicon')
 
 def fetch_youtube_video_details(video_id):
     """
@@ -65,68 +67,50 @@ def fetch_youtube_video_details(video_id):
     }
 
     return metadata
-def fetch_competitor_videos(keyword, max_results=5):
+
+def extract_keywords(text):
+    """
+    Extract keywords from text using NLTK.
+    """
+    stop_words = set(stopwords.words('english'))
+    words = word_tokenize(text.lower())
+    keywords = [word for word in words if word.isalnum() and word not in stop_words]
+    print("comp keys", keywords)
+    return keywords
+
+def fetch_competitor_videos(keyword, max_results=20):
     """
     Fetch competitor videos based on a keyword.
     """
     youtube = build('youtube', 'v3', developerKey=settings.YOUTUBE_API_KEY)
 
-    # Search for videos based on the keyword
-    request = youtube.search().list(
-        q=keyword,
-        part='snippet',
-        type='video',
-        maxResults=max_results,
-        order='viewCount'  # Sort by most viewed
-    )
-    response = request.execute()
+    try:
+        # Search for videos based on the keyword
+        request = youtube.search().list(
+            q=keyword,
+            part='snippet',
+            type='video',
+            maxResults=max_results,
+            # order='viewCount'  # Sort by most viewed
+        )
+        response = request.execute()
+        print('Full response:', response)
 
-    competitor_videos = []
-    for item in response['items']:
-        video_id = item['id']['videoId']
-        video_details = fetch_youtube_video_details(video_id)
-        if video_details:
-            competitor_videos.append(video_details)
+        competitor_videos = []
+        for item in response.get('items', []):
+            video_id = item['id'].get('videoId')
+            if video_id:
+                video_details = fetch_youtube_video_details(video_id)
+                if video_details:
+                    competitor_videos.append(video_details)
 
-    return competitor_videos
+        return competitor_videos
 
-def fetch_youtube_video_details(video_id):
-    """
-    Fetch metadata, engagement metrics, and thumbnail URL for a YouTube video.
-    """
-    youtube = build('youtube', 'v3', developerKey=settings.YOUTUBE_API_KEY)
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return []
 
-    # Fetch video details
-    request = youtube.videos().list(
-        part='snippet,statistics',
-        id=video_id
-    )
-    response = request.execute()
 
-    if not response['items']:
-        return None
-
-    video_data = response['items'][0]
-    snippet = video_data['snippet']
-    statistics = video_data['statistics']
-
-    # Extract relevant details
-    metadata = {
-        'title': snippet['title'],
-        'description': snippet['description'],
-        'tags': snippet.get('tags', []),
-        'upload_date': snippet['publishedAt'],
-        'category_id': snippet['categoryId'],
-        'language': snippet.get('defaultAudioLanguage', ''),
-        'views': statistics.get('viewCount', 0),
-        'likes': statistics.get('likeCount', 0),
-        'dislikes': statistics.get('dislikeCount', 0),
-        'comments': statistics.get('commentCount', 0),
-        'shares': 0,  # Shares are not available via the API
-        'thumbnail_url': snippet['thumbnails']['high']['url'],  # Fetch thumbnail URL
-    }
-
-    return metadata
 def summarize_keywords(keywords_list):
     """
     Summarizes a list of extracted keywords by selecting key themes and generating a human-like summary.

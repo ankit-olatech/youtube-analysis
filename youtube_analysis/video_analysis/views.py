@@ -238,7 +238,7 @@ def analyze_url(request):
         frames, frame_rate = extract_frames(video_filename)
         key_moments = detect_key_moments(frames)
         summary = summarize_keywords(video_details['description'])
-        keywords = summarize_keywords(video_details['title'] + ' ' + video_details['description'])
+        keywords = extract_keywords(video_details['title'] + ' ' + video_details['description'])
         competitor_videos = fetch_competitor_videos(' '.join(keywords))
 
         video_details.update({
