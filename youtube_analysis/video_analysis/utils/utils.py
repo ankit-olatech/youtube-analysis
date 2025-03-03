@@ -3,6 +3,7 @@ import numpy as np
 from moviepy import VideoFileClip
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize, sent_tokenize
+from nltk import pos_tag
 from collections import defaultdict
 import os
 import pytesseract
@@ -25,6 +26,7 @@ nltk.download('punkt')
 nltk.download('punkt_tab')
 # Sentiment Analysis
 nltk.download('vader_lexicon')
+nltk.download('averaged_perceptron_tagger_eng')
 
 def fetch_youtube_video_details(video_id):
     """
@@ -70,17 +72,19 @@ def fetch_youtube_video_details(video_id):
 
 def extract_keywords(text):
     """
-    Extract keywords from text using NLTK.
+    Extract meaningful keywords from text using NLTK.
     """
     stop_words = set(stopwords.words('english'))
     words = word_tokenize(text.lower())
-    keywords = [word for word in words if word.isalnum() and word not in stop_words]
-    print("comp keys", keywords)
+    tagged_words = pos_tag(words)  # Tag words with their part of speech
+
+    # Extract nouns and adjectives as keywords
+    keywords = [word for word, tag in tagged_words if word.isalnum() and word not in stop_words and tag.startswith(('NN', 'JJ'))]
     return keywords
 
 def fetch_competitor_videos(keyword, max_results=20):
     """
-    Fetch competitor videos based on a keyword.
+    Fetch competitor videos with detailed metadata based on a keyword.
     """
     youtube = build('youtube', 'v3', developerKey=settings.YOUTUBE_API_KEY)
 
@@ -94,7 +98,6 @@ def fetch_competitor_videos(keyword, max_results=20):
             # order='viewCount'  # Sort by most viewed
         )
         response = request.execute()
-        print('Full response:', response)
 
         competitor_videos = []
         for item in response.get('items', []):
@@ -102,6 +105,8 @@ def fetch_competitor_videos(keyword, max_results=20):
             if video_id:
                 video_details = fetch_youtube_video_details(video_id)
                 if video_details:
+                    # Add search snippet data (title, description, etc.)
+                    video_details['snippet'] = item['snippet']
                     competitor_videos.append(video_details)
 
         return competitor_videos
@@ -110,6 +115,44 @@ def fetch_competitor_videos(keyword, max_results=20):
         print(f"An error occurred: {e}")
         return []
 
+def compare_metadata_and_engagement(analyzed_video, competitor_videos):
+    """
+    Compare metadata and engagement metrics between the analyzed video and competitor videos.
+    """
+    comparison_results = []
+
+    for competitor in competitor_videos:
+        comparison = {
+            'title': competitor['title'],
+            'views': int(competitor['views']) - int(analyzed_video.get('views', 0)),
+            'likes': int(competitor['likes']) - int(analyzed_video.get('likes', 0)),
+            'comments': int(competitor['comments']) - int(analyzed_video.get('comments', 0)),
+            'keywords': list(set(extract_keywords(competitor['description'])) - set(extract_keywords(analyzed_video.get('description', '')))),
+        }
+        comparison_results.append(comparison)
+
+    return comparison_results
+
+def analyze_content_strategy(analyzed_video, competitor_videos):
+    """
+    Analyze differences in content strategy (length, pacing, hooks) between the analyzed video and competitor videos.
+    """
+    strategy_comparison = []
+
+    analyzed_duration = float(analyzed_video.get('duration', 0))  # Assuming duration is in seconds
+
+    for competitor in competitor_videos:
+        competitor_duration = float(competitor.get('duration', 0))
+        duration_diff = competitor_duration - analyzed_duration
+
+        strategy_comparison.append({
+            'title': competitor['title'],
+            'duration_diff': duration_diff,
+            'hooks': "Hooks analysis placeholder",  # Add logic to analyze hooks
+            'pacing': "Pacing analysis placeholder",  # Add logic to analyze pacing
+        })
+
+    return strategy_comparison
 
 def summarize_keywords(keywords_list):
     """

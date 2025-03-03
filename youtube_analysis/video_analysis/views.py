@@ -241,6 +241,17 @@ def analyze_url(request):
         keywords = extract_keywords(video_details['title'] + ' ' + video_details['description'])
         competitor_videos = fetch_competitor_videos(' '.join(keywords))
 
+        # Compare metadata and engagement
+        metadata_comparison = compare_metadata_and_engagement(video_details, competitor_videos)
+
+        # Analyze content strategy
+        strategy_comparison = analyze_content_strategy(video_details, competitor_videos)
+
+        # Add results to video_details
+        video_details['metadata_comparison'] = metadata_comparison
+        video_details['strategy_comparison'] = strategy_comparison
+
+
         video_details.update({
             "key_moments": key_moments,
             "summary": summary,

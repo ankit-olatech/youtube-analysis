@@ -55,6 +55,57 @@
                 <p>No competitor videos found.</p>
             {% endif %}
 
+            <h2>Competitor Comparison</h2>
+{% if video_details.metadata_comparison %}
+    <h3>Metadata and Engagement Comparison</h3>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Views Difference</th>
+                <th>Likes Difference</th>
+                <th>Comments Difference</th>
+                <th>Unique Keywords</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for competitor in video_details.metadata_comparison %}
+                <tr>
+                    <td>{{ competitor.title }}</td>
+                    <td>{{ competitor.views }}</td>
+                    <td>{{ competitor.likes }}</td>
+                    <td>{{ competitor.comments }}</td>
+                    <td>{{ competitor.keywords|join:", " }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endif %}
+
+{% if video_details.strategy_comparison %}
+    <h3>Content Strategy Comparison</h3>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Duration Difference</th>
+                <th>Hooks</th>
+                <th>Pacing</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for competitor in video_details.strategy_comparison %}
+                <tr>
+                    <td>{{ competitor.title }}</td>
+                    <td>{{ competitor.duration_diff }} seconds</td>
+                    <td>{{ competitor.hooks }}</td>
+                    <td>{{ competitor.pacing }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endif %}
+
 </div>
 
 
