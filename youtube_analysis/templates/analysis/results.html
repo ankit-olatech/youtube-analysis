@@ -5,33 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analysis Results</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .fade-in {
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+        }
+        .fade-in.show {
+            opacity: 1;
+        }
+    </style>
 </head>
 <body>
     <div class="container mt-5">
-    <a href="{% url 'home' %}" class="btn btn-primary">Back to Home</a>
-
+        <a href="{% url 'home' %}" class="btn btn-primary">Back to Home</a>
         <h1>Analysis Results</h1>
-        {% if video_details %}
-            <h2>Video Metadata</h2>
-            <ul>
-                {% for key, value in video_details.items %}
-                    {% if key != 'key_moments' and key != 'summary' %}
-                        <li><strong>{{ key|title }}:</strong> {{ value }}</li>
-                    {% endif %}
-                {% endfor %}
-            </ul>
 
-            <h2>Content Analysis</h2>
-            <p><strong>Summary:</strong> {{ video_details.summary }}</p>
-            <p><strong>Key Moments:</strong> Detected at frames {{ video_details.key_moments }}</p>
-        {% else %}
-            <p>No video details available.</p>
-        {% endif %}
-        <p><strong>Extracted Texts:</strong> Detected at frames {{ text_extract }}</p>
-        <h2>Extracted Text</h2>
-        <h2>Competitor Video Comparison</h2>
-            {% if video_details.competitor_videos %}
-                <table class="table table-bordered">
+        <!-- Loading Spinner -->
+        <div id="loading">
+            <p>Loading analysis results...</p>
+        </div>
+
+        <!-- Results Sections -->
+        <div id="results" style="display: none;">
+            <!-- Video Metadata -->
+            <div id="metadata" class="fade-in">
+                <h2>Video Metadata</h2>
+                <ul id="metadata-list"></ul>
+            </div>
+
+            <!-- Content Analysis -->
+            <div id="content-analysis" class="fade-in">
+                <h2>Content Analysis</h2>
+                <p><strong>Summary:</strong> <span id="summary"></span></p>
+                <p><strong>Key Moments:</strong> <span id="key-moments"></span></p>
+            </div>
+
+            <!-- Competitor Comparison -->
+            <div id="competitor-comparison" class="fade-in">
+                <h2>Competitor Video Comparison</h2>
+                <table id="competitor-table" class="table table-bordered">
                     <thead>
                         <tr>
                             <th>Title</th>
@@ -40,133 +52,125 @@
                             <th>Comments</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {% for competitor in video_details.competitor_videos %}
-                            <tr>
-                                <td>{{ competitor.title }}</td>
-                                <td>{{ competitor.views }}</td>
-                                <td>{{ competitor.likes }}</td>
-                                <td>{{ competitor.comments }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
+                    <tbody></tbody>
                 </table>
-            {% else %}
-                <p>No competitor videos found.</p>
-            {% endif %}
-
-            <h2>Competitor Comparison</h2>
-{% if video_details.metadata_comparison %}
-    <h3>Metadata and Engagement Comparison</h3>
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>Title</th>
-                <th>Views Difference</th>
-                <th>Likes Difference</th>
-                <th>Comments Difference</th>
-                <th>Unique Keywords</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for competitor in video_details.metadata_comparison %}
-                <tr>
-                    <td>{{ competitor.title }}</td>
-                    <td>{{ competitor.views }}</td>
-                    <td>{{ competitor.likes }}</td>
-                    <td>{{ competitor.comments }}</td>
-                    <td>{{ competitor.keywords|join:", " }}</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-{% endif %}
-
-{% if video_details.strategy_comparison %}
-    <h3>Content Strategy Comparison</h3>
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>Title</th>
-                <th>Duration Difference</th>
-                <th>Hooks</th>
-                <th>Pacing</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for competitor in video_details.strategy_comparison %}
-                <tr>
-                    <td>{{ competitor.title }}</td>
-                    <td>{{ competitor.duration_diff }} seconds</td>
-                    <td>{{ competitor.hooks }}</td>
-                    <td>{{ competitor.pacing }}</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-{% endif %}
-
-</div>
-
-
-    </div>
-    <div class="container mt-5">
-
-    <h2>Thumbnail Analysis</h2>
-{% if video_details.thumbnail_analysis %}
-    <ul>
-        <li><strong>Resolution:</strong> {{ video_details.thumbnail_analysis.resolution }}</li>
-        <li><strong>Aspect Ratio:</strong> {{ video_details.thumbnail_analysis.aspect_ratio }}</li>
-        <li><strong>File Size:</strong> {{ video_details.thumbnail_analysis.file_size }}</li>
-        <li><strong>Format:</strong> {{ video_details.thumbnail_analysis.format }}</li>
-        <li><strong>Has Text:</strong> {{ video_details.thumbnail_analysis.has_text|yesno:"Yes,No" }}</li>
-        <li><strong>Has Faces:</strong> {{ video_details.thumbnail_analysis.has_faces|yesno:"Yes,No" }}</li>
-    </ul>
-    <h3>Suggestions</h3>
-    <ul>
-        {% for suggestion in video_details.thumbnail_analysis.suggestions %}
-            <li>{{ suggestion }}</li>
-        {% endfor %}
-    </ul>
-{% else %}
-    <p>No thumbnail analysis available.</p>
-{% endif %}
-</div>
-<div class="container mt-5">
-<h2>Clickbait Analysis</h2>
-<p>Clickbait Index: {{ video_details.clickbait_index }}%</p>
-<ul>
-    <li>Title Clickbait Score: {{ video_details.clickbait_details.title_clickbait }}%</li>
-    <li>Description Clickbait Score: {{ video_details.clickbait_details.description_clickbait }}%</li>
-    <li>Thumbnail Clickbait Score: {{ video_details.clickbait_details.thumbnail_clickbait }}%</li>
-    <li>Engagement Score: {{ video_details.clickbait_details.engagement_score }}%</li>
-</ul>
-</div>
-    <div class="container mt-5">
-        <h1>Analysis Results</h1>
-        {% if frame_capture %}
-
-        <h2>Extracted Frames:</h2>
-
-        <div>
-
-            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                {% for frame in frame_capture %}
-                    <div style="text-align: center;">
-                        <img src="data:image/jpeg;base64,{{ frame }}" alt="Frame" style="width: 50px; height: 50px;">
-                        <span style="display: block; margin-top: 5px;">{{ forloop.counter0 }}</span> <!-- This will print the index starting from 0 -->
-                    </div>
-                {% endfor %}
             </div>
 
+            <!-- Thumbnail Analysis -->
+            <div id="thumbnail-analysis" class="fade-in">
+                <h2>Thumbnail Analysis</h2>
+                <ul id="thumbnail-list"></ul>
+                <h3>Suggestions</h3>
+                <ul id="thumbnail-suggestions"></ul>
+            </div>
+
+            <!-- Clickbait Analysis -->
+            <div id="clickbait-analysis" class="fade-in">
+                <h2>Clickbait Analysis</h2>
+                <p>Clickbait Index: <span id="clickbait-index"></span>%</p>
+                <ul id="clickbait-details"></ul>
+            </div>
+
+            <!-- Extracted Frames -->
+            <div id="extracted-frames" class="fade-in">
+                <h2>Extracted Frames</h2>
+                <div id="frames-container" style="display: flex; flex-wrap: wrap; gap: 10px;"></div>
+            </div>
         </div>
-
-    {% else %}
-
-        <p>No frames extracted.</p>
-
-    {% endif %}
-            <a href="{% url 'home' %}" class="btn btn-primary">Back to Home</a>
     </div>
+
+    <script>
+        const taskId = "{{ task_id }}";  // Task ID from the view
+        const resultsDiv = document.getElementById("results");
+        const loadingDiv = document.getElementById("loading");
+
+        function checkTaskStatus() {
+            fetch(`/check-task-status/?task_id=${taskId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "SUCCESS") {
+                        loadingDiv.style.display = "none";
+                        resultsDiv.style.display = "block";
+                        populateResults(data.result);
+                    } else if (data.status === "FAILURE") {
+                        loadingDiv.innerHTML = "<p>Error processing video. Please try again.</p>";
+                    } else {
+                        setTimeout(checkTaskStatus, 2000);  // Check again after 2 seconds
+                    }
+                });
+        }
+
+        function populateResults(data) {
+            // Populate Video Metadata
+            const metadataList = document.getElementById("metadata-list");
+            for (const [key, value] of Object.entries(data)) {
+                if (!['key_moments', 'summary', 'competitor_videos', 'thumbnail_analysis', 'clickbait_index', 'clickbait_details', 'frame_capture'].includes(key)) {
+                    const li = document.createElement("li");
+                    li.innerHTML = `<strong>${key}:</strong> ${value}`;
+                    metadataList.appendChild(li);
+                }
+            }
+            document.getElementById("metadata").classList.add("show");
+
+            // Populate Content Analysis
+            document.getElementById("summary").textContent = data.summary;
+            document.getElementById("key-moments").textContent = data.key_moments.join(", ");
+            document.getElementById("content-analysis").classList.add("show");
+
+            // Populate Competitor Comparison
+            const competitorTable = document.getElementById("competitor-table").getElementsByTagName("tbody")[0];
+            data.competitor_videos.forEach(competitor => {
+                const row = competitorTable.insertRow();
+                row.insertCell().textContent = competitor.title;
+                row.insertCell().textContent = competitor.views;
+                row.insertCell().textContent = competitor.likes;
+                row.insertCell().textContent = competitor.comments;
+            });
+            document.getElementById("competitor-comparison").classList.add("show");
+
+            // Populate Thumbnail Analysis
+            const thumbnailList = document.getElementById("thumbnail-list");
+            for (const [key, value] of Object.entries(data.thumbnail_analysis)) {
+                if (key !== 'suggestions') {
+                    const li = document.createElement("li");
+                    li.innerHTML = `<strong>${key}:</strong> ${value}`;
+                    thumbnailList.appendChild(li);
+                }
+            }
+            const thumbnailSuggestions = document.getElementById("thumbnail-suggestions");
+            data.thumbnail_analysis.suggestions.forEach(suggestion => {
+                const li = document.createElement("li");
+                li.textContent = suggestion;
+                thumbnailSuggestions.appendChild(li);
+            });
+            document.getElementById("thumbnail-analysis").classList.add("show");
+
+            // Populate Clickbait Analysis
+            document.getElementById("clickbait-index").textContent = data.clickbait_index;
+            const clickbaitDetails = document.getElementById("clickbait-details");
+            for (const [key, value] of Object.entries(data.clickbait_details)) {
+                const li = document.createElement("li");
+                li.textContent = `${key}: ${value}%`;
+                clickbaitDetails.appendChild(li);
+            }
+            document.getElementById("clickbait-analysis").classList.add("show");
+
+            // Populate Extracted Frames
+            const framesContainer = document.getElementById("frames-container");
+            data.frame_capture.forEach((frame, index) => {
+                const frameDiv = document.createElement("div");
+                frameDiv.style.textAlign = "center";
+                frameDiv.innerHTML = `
+                    <img src="data:image/jpeg;base64,${frame}" alt="Frame" style="width: 50px; height: 50px;">
+                    <span style="display: block; margin-top: 5px;">${index}</span>
+                `;
+                framesContainer.appendChild(frameDiv);
+            });
+            document.getElementById("extracted-frames").classList.add("show");
+        }
+
+        // Start checking the task status
+        checkTaskStatus();
+    </script>
 </body>
 </html>

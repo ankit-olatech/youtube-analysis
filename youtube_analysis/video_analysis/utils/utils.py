@@ -28,6 +28,21 @@ nltk.download('punkt_tab')
 nltk.download('vader_lexicon')
 nltk.download('averaged_perceptron_tagger_eng')
 
+from celery.result import AsyncResult
+from django.http import JsonResponse
+
+def check_task_status(request):
+    task_id = request.GET.get('task_id')
+    task = AsyncResult(task_id)
+
+    if task.ready():
+        if task.successful():
+            return JsonResponse({'status': 'SUCCESS', 'result': task.result})
+        else:
+            return JsonResponse({'status': 'FAILURE'})
+    else:
+        return JsonResponse({'status': 'PENDING'})
+
 def fetch_youtube_video_details(video_id):
     """
     Fetch metadata and engagement metrics for a YouTube video using its video ID.
