@@ -480,15 +480,16 @@ CLICKBAIT_WORDS = [
     "crazy", "must-watch", "top 10", "gone wrong", "the truth about", "biggest ever"
 ]
 
-def calculate_clickbait_index(video_id):
+def calculate_clickbait_index(video_id, audio_keywords):
     """
     Calculates the Clickbait Index (0-100%) for a YouTube video based on title, thumbnail, description, and engagement.
     
     Args:
         video_id (str): The YouTube video ID.
+        audio_keywords (list): A list of keywords extracted from the audio transcription.
     
     Returns:
-        float: Clickbait score percentage (0-100).
+        dict: Clickbait score percentage (0-100) and details.
     """
     youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=settings.YOUTUBE_API_KEY)
 
@@ -511,6 +512,10 @@ def calculate_clickbait_index(video_id):
     # ------ 1. Title Clickbait Score (40%) ------
     title_score = sum(1 for word in CLICKBAIT_WORDS if word in title) / len(CLICKBAIT_WORDS)
     title_clickbait = title_score * 40
+
+    # ------ 1.1. Audio Keywords Similarity Score ------
+    audio_similarity_score = sum(1 for word in audio_keywords if word in title) / len(audio_keywords) if audio_keywords else 0
+    title_clickbait += audio_similarity_score * 10  # Adjust weight as needed
 
     # ------ 2. Description Clickbait Score (20%) ------
     description_score = sum(1 for word in CLICKBAIT_WORDS if word in description) / len(CLICKBAIT_WORDS)
@@ -550,6 +555,9 @@ def calculate_clickbait_index(video_id):
             "title_clickbait": round(title_clickbait, 2),
             "description_clickbait": round(description_clickbait, 2),
             "thumbnail_clickbait": round(thumbnail_clickbait, 2),
-            "engagement_score": round(engagement_score, 2)
+            "engagement_score": round(engagement_score, 2),
+            "audio_similarity_score": round(audio_similarity_score, 2)
+
         }
+
     }
