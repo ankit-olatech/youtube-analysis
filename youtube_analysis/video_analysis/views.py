@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect
+from django.http import HttpResponse
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
 import re
@@ -269,6 +270,8 @@ def analyze_url(request):
         video_details['strategy_comparison'] = analyze_content_strategy(video_details, fetch_competitor_videos(' '.join(metadata_keywords)))
         video_details['audio_text'] = audio_analysis['audio_text']  # Add extracted audio text to video details
 
+        
+
         video_details.update({
             "key_moments": key_moments,
             "summary": summary,
@@ -279,10 +282,31 @@ def analyze_url(request):
 
         # Convert frames to base64 for rendering
         base64_frames = [frame_to_base64(frame) for frame in frames]
-
+        # SESSION FOR PDF REPORT GENERATION
+        request.session['video_details'] = video_details
+        request.session['base64_frames'] = base64_frames
         return render(request, 'analysis/results.html', {'video_details': video_details, 'frame_capture': base64_frames})
 
     return redirect('home')
+
+# GENERATE REPORT
+def download_pdf(request):
+    """
+    Generate and download the PDF report.
+    """
+    video_details = request.session.get('video_details', {})
+    base64_frames = request.session.get('base64_frames', [])
+
+    if not video_details:
+        return HttpResponse("No data available to generate PDF.")
+
+    # Generate the PDF
+    pdf_buffer = generate_pdf_report(video_details, base64_frames)
+
+    # Create the HttpResponse object with the appropriate PDF headers
+    response = HttpResponse(pdf_buffer, content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="video_analysis_report.pdf"'
+    return response
 
 def analyze_file(request):
     if request.method == 'POST':

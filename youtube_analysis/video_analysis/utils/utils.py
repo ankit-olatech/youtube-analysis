@@ -34,6 +34,14 @@ import speech_recognition as sr
 import yt_dlp
 import os
 
+#PDF REPORT GEN
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+from io import BytesIO
+
+
 def fetch_youtube_video_details(video_id):
     """
     Fetch metadata and engagement metrics for a YouTube video using its video ID.
@@ -561,3 +569,187 @@ def calculate_clickbait_index(video_id, audio_keywords):
         }
 
     }
+
+
+# GENERATE PDF REPORT
+
+def generate_pdf_report(video_details, base64_frames):
+    """
+    Generate a PDF report for the video analysis results, including thumbnail analysis.
+    """
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    styles = getSampleStyleSheet()
+    story = []
+
+    # Title
+    title_style = ParagraphStyle(
+        name='TitleStyle',
+        parent=styles['Title'],
+        fontSize=18,
+        alignment=1,  # Center alignment
+        spaceAfter=20
+    )
+    story.append(Paragraph("YouTube Video Analysis Report", title_style))
+
+    # Video Details Section
+    story.append(Paragraph("<b>Video Details:</b>", styles['Heading2']))
+    story.append(Spacer(1, 12))
+
+    video_details_table_data = [
+        ["Title", video_details.get('title', 'N/A')],
+        ["Views", video_details.get('views', 'N/A')],
+        ["Likes", video_details.get('likes', 'N/A')],
+        ["Comments", video_details.get('comment_count', 'N/A')],
+        ["Upload Date", video_details.get('upload_date', 'N/A')],
+        ["Category", video_details.get('category_id', 'N/A')],
+    ]
+    video_details_table = Table(video_details_table_data, colWidths=[150, 300])
+    video_details_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+    ]))
+    story.append(video_details_table)
+    story.append(Spacer(1, 20))
+
+    # Comment Sentiment Analysis
+    story.append(Paragraph("<b>Comment Sentiment Analysis:</b>", styles['Heading2']))
+    sentiment_data = video_details.get('comment_sentiment', {})
+    sentiment_table_data = [
+        ["Positive Comments", sentiment_data.get('positive', 0)],
+        ["Neutral Comments", sentiment_data.get('neutral', 0)],
+        ["Negative Comments", sentiment_data.get('negative', 0)],
+    ]
+    sentiment_table = Table(sentiment_table_data, colWidths=[150, 300])
+    sentiment_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+    ]))
+    story.append(sentiment_table)
+    story.append(Spacer(1, 20))
+
+    # Clickbait Analysis
+    story.append(Paragraph("<b>Clickbait Analysis:</b>", styles['Heading2']))
+    clickbait_data = video_details.get('clickbait_details', {})
+    clickbait_table_data = [
+        ["Clickbait Index", video_details.get('clickbait_index', 'N/A')],
+        ["Title Clickbait Score", clickbait_data.get('title_clickbait', 'N/A')],
+        ["Description Clickbait Score", clickbait_data.get('description_clickbait', 'N/A')],
+        ["Thumbnail Clickbait Score", clickbait_data.get('thumbnail_clickbait', 'N/A')],
+        ["Engagement Score", clickbait_data.get('engagement_score', 'N/A')],
+    ]
+    clickbait_table = Table(clickbait_table_data, colWidths=[150, 300])
+    clickbait_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+    ]))
+    story.append(clickbait_table)
+    story.append(Spacer(1, 20))
+
+    # Competitor Analysis
+    story.append(Paragraph("<b>Competitor Analysis:</b>", styles['Heading2']))
+    competitor_videos = video_details.get('competitor_videos', [])
+    if competitor_videos:
+        competitor_table_data = [["Title", "Views", "Likes", "Comments", "Keywords"]]
+        for competitor in competitor_videos:
+            competitor_table_data.append([
+                competitor.get('title', 'N/A'),
+                competitor.get('views', 'N/A'),
+                competitor.get('likes', 'N/A'),
+                competitor.get('comments', 'N/A'),
+                ', '.join(extract_keywords(competitor.get('description', ''))),
+            ])
+        competitor_table = Table(competitor_table_data, colWidths=[150, 80, 80, 80, 150])
+        competitor_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ]))
+        story.append(competitor_table)
+    else:
+        story.append(Paragraph("No competitor data available.", styles['BodyText']))
+    story.append(Spacer(1, 20))
+
+    # Thumbnail Analysis
+    story.append(Paragraph("<b>Thumbnail Analysis:</b>", styles['Heading2']))
+    thumbnail_analysis = video_details.get('thumbnail_analysis', {})
+    if thumbnail_analysis and not thumbnail_analysis.get('error'):
+        thumbnail_table_data = [
+            ["Resolution", thumbnail_analysis.get('resolution', 'N/A')],
+            ["Aspect Ratio", thumbnail_analysis.get('aspect_ratio', 'N/A')],
+            ["File Size", thumbnail_analysis.get('file_size', 'N/A')],
+            ["Format", thumbnail_analysis.get('format', 'N/A')],
+            ["Has Text", "Yes" if thumbnail_analysis.get('has_text') else "No"],
+            ["Has Faces", "Yes" if thumbnail_analysis.get('has_faces') else "No"],
+        ]
+        thumbnail_table = Table(thumbnail_table_data, colWidths=[150, 300])
+        thumbnail_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ]))
+        story.append(thumbnail_table)
+
+        # Thumbnail Suggestions
+        story.append(Paragraph("<b>Thumbnail Suggestions:</b>", styles['Heading3']))
+        suggestions = thumbnail_analysis.get('suggestions', [])
+        if suggestions:
+            for suggestion in suggestions:
+                story.append(Paragraph(f"- {suggestion}", styles['BodyText']))
+        else:
+            story.append(Paragraph("No suggestions available.", styles['BodyText']))
+    else:
+        story.append(Paragraph("Thumbnail analysis not available.", styles['BodyText']))
+    story.append(Spacer(1, 20))
+
+    # # Extracted Frames
+    # story.append(Paragraph("<b>Extracted Frames:</b>", styles['Heading2']))
+    # if base64_frames:
+    #     for i, frame in enumerate(base64_frames[:5]):  # Limit to 5 frames for brevity
+    #         frame_image = Image(BytesIO(base64.b64decode(frame)), width=400, height=300)
+    #         story.append(frame_image)
+    #         story.append(Spacer(1, 10))
+    # else:
+    #     story.append(Paragraph("No frames extracted.", styles['BodyText']))
+    # story.append(Spacer(1, 20))
+
+    # General Suggestions and Improvements
+    story.append(Paragraph("<b>Suggestions and Improvements:</b>", styles['Heading2']))
+    suggestions = [
+        "1. Optimize the video title for better SEO.",
+        "2. Add more engaging thumbnails with text overlays.",
+        "3. Increase the frequency of key moments to retain viewer attention.",
+        "4. Use more positive language in the video description to improve sentiment.",
+        "5. Analyze competitor videos to identify trends and improve content strategy.",
+    ]
+    for suggestion in suggestions:
+        story.append(Paragraph(suggestion, styles['BodyText']))
+        story.append(Spacer(1, 5))
+
+    # Build the PDF
+    doc.build(story)
+    buffer.seek(0)
+    return buffer
