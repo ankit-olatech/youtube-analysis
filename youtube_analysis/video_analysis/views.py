@@ -200,146 +200,90 @@ def frame_to_base64(frame):
 #     return redirect('home')
 
 def analyze_url(request):
-
     if request.method == 'POST':
-
         youtube_url = request.POST.get('youtube_url')
 
         youtube_regex = r'(https?://)?(www\.)?(youtube|youtu|youtube-nocookie)\.(com|be)/(watch\?v=|embed/|v/|.+\?v=)?([^&=%\?]{11})'
-
         match = re.match(youtube_regex, youtube_url)
 
-
         if not match:
-
             return render(request, 'analysis/home.html', {'error': 'Invalid YouTube URL. Please enter a valid URL.'})
-
 
         video_id = match.group(6)
 
-
         # Fetch video details
-
         video_details = fetch_youtube_video_details(video_id)
-
         if not video_details:
-
             return render(request, 'analysis/home.html', {'error': 'Unable to fetch video details. Please check the URL.'})
 
-
         # Fetch comment analysis
-
         comment_data = fetch_youtube_comments(video_id)
-
         video_details["comment_count"] = comment_data["total_comments"]
-
         video_details["comment_sentiment"] = comment_data["sentiment_analysis"]
 
-        print("Clickbait Analysis Done")
-
-        
-
         # Calculate Clickbait Index
-
         clickbait_analysis = calculate_clickbait_index(video_id)
-
         video_details["clickbait_index"] = clickbait_analysis["clickbait_index"]
-
         video_details["clickbait_details"] = clickbait_analysis["details"]
 
-
         # Download the video using yt-dlp
-
         output_path = 'media/%(title)s.%(ext)s'
-
         try:
-
             subprocess.run(['yt-dlp', '-o', output_path, youtube_url], check=True)
-
         except subprocess.CalledProcessError as e:
-
             return render(request, 'analysis/home.html', {'error': f'Error downloading video: {str(e)}'})
-
 
         video_filename = f"media/{video_details['title']}.mp4"
 
-
         # Download the thumbnail
-
         thumbnail_url = video_details['thumbnail_url']
-
         thumbnail_filename = f"media/{video_details['title']}_thumbnail.jpg"  # Change the extension as needed
 
-
         try:
-
             response = requests.get(thumbnail_url)
-
             response.raise_for_status()  # Raise an error for bad responses
-
             with open(thumbnail_filename, 'wb') as f:
-
                 f.write(response.content)
-
         except Exception as e:
-
             return render(request, 'analysis/home.html', {'error': f'Error downloading thumbnail: {str(e)}'})
 
-
         # Analyze video content
-
         frames, frame_rate = extract_frames(video_filename)
-
         key_moments = detect_key_moments(frames)
 
-        summary = summarize_keywords(video_details['description'])
+        # Extract keywords from video metadata
+        metadata_keywords = extract_keywords(video_details['description']) + extract_keywords(video_details['title'])
 
-        keywords = extract_keywords(video_details['title'] + ' ' + video_details['description'])
+        # Extract text from frames and summarize keywords
+        cleaned_texts, summary = extract_text_from_frames(frames, video_details)
 
-        competitor_videos = fetch_competitor_videos(' '.join(keywords))
-
+        # Fetch competitor videos based on keywords
+        competitor_videos = fetch_competitor_videos(' '.join(metadata_keywords))
 
         # Compare metadata and engagement
-
         metadata_comparison = compare_metadata_and_engagement(video_details, competitor_videos)
 
-
         # Analyze content strategy
-
         strategy_comparison = analyze_content_strategy(video_details, competitor_videos)
 
-
         # Add results to video_details
-
         video_details['metadata_comparison'] = metadata_comparison
-
         video_details['strategy_comparison'] = strategy_comparison
 
-
         video_details.update({
-
             "key_moments": key_moments,
-
             "summary": summary,
-
             "competitor_videos": competitor_videos,
-
             "thumbnail_path": thumbnail_filename,  # Store the path to the thumbnail
-
             "thumbnail_analysis": analyze_thumbnail(thumbnail_filename)  # Analyze the saved thumbnail
-
         })
 
-
         # Convert frames to base64 for rendering
-
         base64_frames = [frame_to_base64(frame) for frame in frames]
-
 
         return render(request, 'analysis/results.html', {'video_details': video_details, 'frame_capture': base64_frames})
 
     return redirect('home')
-
 
 
 def analyze_file(request):
