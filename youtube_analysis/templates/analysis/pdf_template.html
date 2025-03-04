@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Video Analysis Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        h2 {
+            color: #34495e;
+            border-bottom: 2px solid #34495e;
+            padding-bottom: 5px;
+            margin-top: 30px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            color: #333;
+        }
+        .suggestions {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-left: 5px solid #3498db;
+            margin-bottom: 20px;
+        }
+        .suggestions h3 {
+            margin-top: 0;
+            color: #3498db;
+        }
+        .frame-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .frame-container img {
+            width: 100px;
+            height: 75px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <h1>YouTube Video Analysis Report</h1>
+
+    <!-- Video Metadata -->
+    <h2>Video Metadata</h2>
+    <table>
+        <tr>
+            <th>Title</th>
+            <td>{{ video_details.title }}</td>
+        </tr>
+        <tr>
+            <th>Description</th>
+            <td>{{ video_details.description }}</td>
+        </tr>
+        <tr>
+            <th>Views</th>
+            <td>{{ video_details.views }}</td>
+        </tr>
+        <tr>
+            <th>Likes</th>
+            <td>{{ video_details.likes }}</td>
+        </tr>
+        <tr>
+            <th>Comments</th>
+            <td>{{ video_details.comments }}</td>
+        </tr>
+        <tr>
+            <th>Upload Date</th>
+            <td>{{ video_details.upload_date }}</td>
+        </tr>
+    </table>
+
+    <!-- Content Analysis -->
+    <h2>Content Analysis</h2>
+    <p><strong>Summary:</strong> {{ video_details.summary }}</p>
+    <p><strong>Key Moments:</strong> Detected at frames {{ video_details.key_moments }}</p>
+
+    <!-- Competitor Comparison -->
+    <h2>Competitor Comparison</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Views Difference</th>
+                <th>Likes Difference</th>
+                <th>Comments Difference</th>
+                <th>Unique Keywords</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for competitor in video_details.metadata_comparison %}
+                <tr>
+                    <td>{{ competitor.title }}</td>
+                    <td>{{ competitor.views }}</td>
+                    <td>{{ competitor.likes }}</td>
+                    <td>{{ competitor.comments }}</td>
+                    <td>{{ competitor.keywords|join:", " }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Thumbnail Analysis -->
+    <h2>Thumbnail Analysis</h2>
+    <table>
+        <tr>
+            <th>Resolution</th>
+            <td>{{ video_details.thumbnail_analysis.resolution }}</td>
+        </tr>
+        <tr>
+            <th>Aspect Ratio</th>
+            <td>{{ video_details.thumbnail_analysis.aspect_ratio }}</td>
+        </tr>
+        <tr>
+            <th>File Size</th>
+            <td>{{ video_details.thumbnail_analysis.file_size }}</td>
+        </tr>
+        <tr>
+            <th>Format</th>
+            <td>{{ video_details.thumbnail_analysis.format }}</td>
+        </tr>
+        <tr>
+            <th>Has Text</th>
+            <td>{{ video_details.thumbnail_analysis.has_text|yesno:"Yes,No" }}</td>
+        </tr>
+        <tr>
+            <th>Has Faces</th>
+            <td>{{ video_details.thumbnail_analysis.has_faces|yesno:"Yes,No" }}</td>
+        </tr>
+    </table>
+    <div class="suggestions">
+        <h3>Suggestions</h3>
+        <ul>
+            {% for suggestion in video_details.thumbnail_analysis.suggestions %}
+                <li>{{ suggestion }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Clickbait Analysis -->
+    <h2>Clickbait Analysis</h2>
+    <p><strong>Clickbait Index:</strong> {{ video_details.clickbait_index }}%</p>
+    <table>
+        <tr>
+            <th>Title Clickbait Score</th>
+            <td>{{ video_details.clickbait_details.title_clickbait }}%</td>
+        </tr>
+        <tr>
+            <th>Description Clickbait Score</th>
+            <td>{{ video_details.clickbait_details.description_clickbait }}%</td>
+        </tr>
+        <tr>
+            <th>Thumbnail Clickbait Score</th>
+            <td>{{ video_details.clickbait_details.thumbnail_clickbait }}%</td>
+        </tr>
+        <tr>
+            <th>Engagement Score</th>
+            <td>{{ video_details.clickbait_details.engagement_score }}%</td>
+        </tr>
+    </table>
+
+    <!-- Extracted Frames -->
+    <h2>Extracted Frames</h2>
+    <div class="frame-container">
+        {% for frame in frame_capture %}
+            <img src="data:image/jpeg;base64,{{ frame }}" alt="Frame {{ forloop.counter }}">
+        {% endfor %}
+    </div>
+</body>
+</html>

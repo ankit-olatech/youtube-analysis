@@ -25,6 +25,12 @@ from django.conf import settings
 import requests
 developerKey=settings.YOUTUBE_API_KEY
 
+#PDF GEN
+
+from django.template.loader import render_to_string
+from django.http import HttpResponse
+from weasyprint import HTML
+
 
 
 def home(request):
@@ -279,10 +285,32 @@ def analyze_url(request):
 
         # Convert frames to base64 for rendering
         base64_frames = [frame_to_base64(frame) for frame in frames]
+        request.session['video_details'] = video_details
+        request.session['frame_capture'] = base64_frames
 
         return render(request, 'analysis/results.html', {'video_details': video_details, 'frame_capture': base64_frames})
 
     return redirect('home')
+
+
+def download_pdf(request):
+    # Retrieve data from session or context
+    video_details = request.session.get('video_details', {})
+    frame_capture = request.session.get('frame_capture', [])
+
+    # Render the HTML template
+    html_string = render_to_string('analysis/pdf_template.html', {
+        'video_details': video_details,
+        'frame_capture': frame_capture,
+    })
+
+    # Convert HTML to PDF
+    pdf_file = HTML(string=html_string).write_pdf()
+
+    # Create HTTP response with PDF
+    response = HttpResponse(pdf_file, content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="video_analysis_report.pdf"'
+    return response
 
 def analyze_file(request):
     if request.method == 'POST':
