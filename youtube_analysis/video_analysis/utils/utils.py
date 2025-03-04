@@ -155,44 +155,81 @@ def analyze_content_strategy(analyzed_video, competitor_videos):
     return strategy_comparison
 
 def summarize_keywords(keywords_list):
+
     """
+
     Summarizes a list of extracted keywords by selecting key themes and generating a human-like summary.
 
+
     Args:
+
         keywords_list (list): A list of keywords extracted from video frames.
 
+
     Returns:
+
         str: A concise and readable summary of the key themes.
+
     """
 
+
     if not keywords_list:
+
         return "No meaningful content detected."
 
+
     # Step 1: Preprocess Keywords (Lowercase and Remove Stopwords)
+
     stop_words = set(stopwords.words('english'))
+
     cleaned_keywords = [word.lower() for word in keywords_list if word.isalnum() and word.lower() not in stop_words]
 
+
+    print("Cleaned Keywords:", cleaned_keywords)  # Debugging line
+
+
     if not cleaned_keywords:
+
         return "No meaningful keywords found for summarization."
 
+
     # Step 2: Calculate Word Frequency
+
     word_frequencies = defaultdict(int)
+
     for word in cleaned_keywords:
+
         word_frequencies[word] += 1
 
+
     # Step 3: Identify Top Keywords (Most Frequent)
+
     sorted_keywords = sorted(word_frequencies, key=word_frequencies.get, reverse=True)
+
     top_keywords = sorted_keywords[:5]  # Get the 5 most frequent keywords
 
+
+    print("Top Keywords:", top_keywords)  # Debugging line
+
+
     # Step 4: Generate a Human-Like Summary
+
     if len(top_keywords) < 3:
+
         summary = f"The main focus appears to be on {', '.join(top_keywords)}."
+
     else:
+
         summary = (
+
             f"This content primarily discusses {top_keywords[0]}, "
+
             f"with significant emphasis on {top_keywords[1]} and {top_keywords[2]}. "
+
             f"Additionally, it touches upon {', '.join(top_keywords[3:])}."
+
         )
+
 
     return summary
 def extract_frames(video_path, frame_interval=7):
