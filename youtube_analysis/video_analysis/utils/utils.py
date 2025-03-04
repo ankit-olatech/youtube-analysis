@@ -28,6 +28,12 @@ nltk.download('punkt_tab')
 nltk.download('vader_lexicon')
 nltk.download('averaged_perceptron_tagger_eng')
 
+
+import moviepy as mp
+import speech_recognition as sr
+import yt_dlp
+import os
+
 def fetch_youtube_video_details(video_id):
     """
     Fetch metadata and engagement metrics for a YouTube video using its video ID.
@@ -92,7 +98,7 @@ def extract_keywords(text):
     keywords = [word for word, tag in tagged_words if word.isalnum() and word not in stop_words and tag.startswith(('NN', 'JJ'))]
     return keywords
 
-def fetch_competitor_videos(keyword, max_results=20):
+def fetch_competitor_videos(keyword, max_results=10):
     """
     Fetch competitor videos with detailed metadata based on a keyword.
     """
@@ -166,18 +172,19 @@ def analyze_content_strategy(analyzed_video, competitor_videos):
 
 def summarize_keywords(frame_keywords, metadata_keywords):
     """
-    Summarizes a list of extracted keywords from both video frames and video metadata.
+    Summarizes a list of extracted keywords from video frames, metadata, and audio.
 
     Args:
         frame_keywords (list): A list of keywords extracted from video frames.
         metadata_keywords (list): A list of keywords extracted from video metadata (title, description).
+        audio_keywords (list): A list of keywords extracted from audio transcription.
 
     Returns:
         str: A concise and readable summary of the key themes.
     """
 
-    # Combine keywords from both sources
-    combined_keywords = frame_keywords + metadata_keywords
+    # Combine keywords from all sources
+    combined_keywords = frame_keywords + metadata_keywords 
 
     if not combined_keywords:
         return "No meaningful content detected."
@@ -209,6 +216,7 @@ def summarize_keywords(frame_keywords, metadata_keywords):
         )
 
     return summary
+
 def extract_frames(video_path, frame_interval=7):
     """
     Extract frames from the video at a specified interval.
@@ -265,6 +273,97 @@ def detect_key_moments(frames, threshold=30):
         prev_frame = frame
 
     return key_moments
+
+
+# EXTRACTION FROM AUDIO AND SUBTITLES
+
+
+def extract_audio(video_path, audio_output_path="audio.wav"):
+    """
+    Extract audio from a video file and save it as a WAV file.
+    """
+    video = mp.VideoFileClip(video_path)
+    video.audio.write_audiofile(audio_output_path)
+    return audio_output_path
+
+def transcribe_audio(audio_path):
+    """
+    Transcribe audio to text using Google Speech-to-Text API.
+    """
+    recognizer = sr.Recognizer()
+    with sr.AudioFile(audio_path) as source:
+        audio = recognizer.record(source)
+    try:
+        text = recognizer.recognize_google(audio)
+        return text
+    except sr.UnknownValueError:
+        return "Google Speech Recognition could not understand audio"
+    except sr.RequestError as e:
+        return f"Could not request results from Google Speech Recognition service; {e}"
+
+# def extract_subtitles(video_url, subtitle_output_path="subtitles.srt"):
+#     """
+#     Extract subtitles from a YouTube video using yt-dlp.
+#     """
+#     ydl_opts = {
+#         'writesubtitles': True,
+#         'subtitlesformat': 'srt',
+#         'outtmpl': subtitle_output_path.replace('.srt', '.%(ext)s'),
+#         'skip_download': True,
+#     }
+#     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+#         ydl.download([video_url])
+#     return subtitle_output_path
+
+# def read_subtitles(subtitle_path):
+#     """
+#     Read subtitles from an SRT file and return as a single string.
+#     """
+#     with open(subtitle_path, 'r', encoding='utf-8') as file:
+#         subtitles = file.read()
+#     return subtitles
+
+def summarize_text(text):
+    """
+    Summarize text using NLTK or any other summarization library.
+    """
+    from nltk.tokenize import sent_tokenize
+    sentences = sent_tokenize(text)
+    summary = ' '.join(sentences[:3])  # Simple summarization: take the first 3 sentences
+    return summary
+
+def analyze_audio_and_subtitles(video_url, video_path):
+    """
+    Extract and summarize text from both audio and subtitles.
+    """
+    # Step 1: Extract audio from video
+    audio_path = extract_audio(video_path)
+    print("Extraction")
+    
+    # Step 2: Transcribe audio to text
+    audio_text = transcribe_audio(audio_path)
+    
+    # Step 3: Extract subtitles
+    # subtitle_path = extract_subtitles(video_url)
+    # subtitle_text = read_subtitles(subtitle_path)
+    
+    # Step 4: Combine text from audio and subtitles
+    # combined_text = f"{audio_text}\n{subtitle_text}"
+    audio_keywords = extract_keywords(audio_text)
+    print("EXTRACTED AUDIO", audio_keywords)
+    combined_text = f"{audio_text}"
+
+    
+    # Step 5: Summarize the combined text
+    summary = summarize_text(combined_text)
+    
+    return {
+        "audio_text": audio_text,
+        # "subtitle_text": subtitle_text,
+        "combined_text": combined_text,
+        "summary": summary,
+        "audio_keywords": audio_keywords
+    }
 
 
 

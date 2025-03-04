@@ -266,9 +266,28 @@ def analyze_url(request):
         # Analyze content strategy
         strategy_comparison = analyze_content_strategy(video_details, competitor_videos)
 
+        # Analyze audio and subtitles
+        # Analyze audio and subtitles
+
+        audio_analysis = analyze_audio_and_subtitles(youtube_url, video_filename)
+
+        
+
+        # Extract keywords from video metadata
+
+        metadata_keywords = extract_keywords(video_details['description']) + extract_keywords(video_details['title'])
+
+
+        # Summarize keywords from frames, metadata, and audio
+
+        cleaned_texts, summary = extract_text_from_frames(frames, video_details)
+
+        summary = summarize_keywords(list(cleaned_texts), metadata_keywords)
+
         # Add results to video_details
         video_details['metadata_comparison'] = metadata_comparison
         video_details['strategy_comparison'] = strategy_comparison
+        video_details['audio_text'] = audio_analysis['audio_text']  # Add extracted audio text to video details
 
         video_details.update({
             "key_moments": key_moments,
