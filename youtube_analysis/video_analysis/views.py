@@ -221,11 +221,12 @@ def analyze_url(request):
         video_details = fetch_youtube_video_details(video_id)
         if not video_details:
             return render(request, 'analysis/home.html', {'error': 'Unable to fetch video details. Please check the URL.'})
-
+        print("Video Details Fetched")
         # Fetch comment analysis
         comment_data = fetch_youtube_comments(video_id)
         video_details["comment_count"] = comment_data["total_comments"]
         video_details["comment_sentiment"] = comment_data["sentiment_analysis"]
+        print("Comments Fetched!")
 
         # Download the video using yt-dlp
         output_path = 'media/%(title)s.%(ext)s'
@@ -235,6 +236,7 @@ def analyze_url(request):
             return render(request, 'analysis/home.html', {'error': f'Error downloading video: {str(e)}'})
 
         video_filename = f"media/{video_details['title']}.mp4"
+        print("Vide Downloaded")
 
         # Download the thumbnail
         thumbnail_url = video_details['thumbnail_url']
@@ -247,10 +249,12 @@ def analyze_url(request):
                 f.write(response.content)
         except Exception as e:
             return render(request, 'analysis/home.html', {'error': f'Error downloading thumbnail: {str(e)}'})
+        print("Thumbnail Analysis Done")
 
         # Analyze video content
         frames, frame_rate = extract_frames(video_filename)
         key_moments = detect_key_moments(frames)
+        print("Frame Extraction and Hook Done!")
 
         # Extract keywords from video metadata
         metadata_keywords = extract_keywords(video_details['description']) + extract_keywords(video_details['title'])
@@ -260,19 +264,24 @@ def analyze_url(request):
 
         # Extract audio keywords
         audio_keywords = audio_analysis['audio_keywords']  # Assuming this is returned from the function
+        print("Audio Analysis Done")
 
         # Calculate Clickbait Index with audio keywords
         clickbait_analysis = calculate_clickbait_index(video_id, audio_keywords)
         video_details["clickbait_index"] = clickbait_analysis["clickbait_index"]
         video_details["clickbait_details"] = clickbait_analysis["details"]
+        print("Clickbait Analysis Done")
 
-        # Summarize keywords from frames, metadata, and audio
+        # Summarize keywords from frames, metadata, and audio - MOST TIME CONSUMING
         cleaned_texts, summary = extract_text_from_frames(frames, video_details)
         summary = summarize_keywords(list(cleaned_texts), metadata_keywords)
+        print("Video Summary Done")
 
         # Add results to video_details
         video_details['metadata_comparison'] = compare_metadata_and_engagement(video_details, fetch_competitor_videos(' '.join(metadata_keywords)))
         video_details['strategy_comparison'] = analyze_content_strategy(video_details, fetch_competitor_videos(' '.join(metadata_keywords)))
+        print("Competitir Analysis Done")
+
         video_details['audio_text'] = audio_analysis['audio_text']  # Add extracted audio text to video details
 
         video_details.update({

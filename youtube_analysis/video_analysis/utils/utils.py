@@ -217,7 +217,7 @@ def summarize_keywords(frame_keywords, metadata_keywords):
 
     return summary
 
-def extract_frames(video_path, frame_interval=7):
+def extract_frames(video_path, frame_interval=15):
     """
     Extract frames from the video at a specified interval.
     """
