@@ -271,6 +271,11 @@ def analyze_url(request):
         video_details["clickbait_index"] = clickbait_analysis["clickbait_index"]
         video_details["clickbait_details"] = clickbait_analysis["details"]
         print("Clickbait Analysis Done")
+        
+        # Extract Text from Frames
+        # cleaned_texts, summary = extract_text_from_frames(frames, video_details)
+        # video_details['text_extract'] = cleaned_texts
+
 
         # Summarize keywords from frames, metadata, and audio - MOST TIME CONSUMING
         cleaned_texts, summary = extract_text_from_frames(frames, video_details)
@@ -289,7 +294,7 @@ def analyze_url(request):
             "summary": summary,
             "competitor_videos": fetch_competitor_videos(' '.join(metadata_keywords)),
             "thumbnail_path": thumbnail_filename,  # Store the path to the thumbnail
-            "thumbnail_analysis": analyze_thumbnail(thumbnail_filename)  # Analyze the saved thumbnail
+            "thumbnail_analysis": analyze_thumbnail(thumbnail_filename),  # Analyze the saved thumbnail
         })
 
         # Convert frames to base64 for rendering

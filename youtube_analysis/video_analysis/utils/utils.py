@@ -8,6 +8,8 @@ from collections import defaultdict
 import os
 import pytesseract
 from PIL import Image, ImageOps
+# from deepface import DeepFace
+# import dlib
 from collections import defaultdict
 import nltk
 import string
@@ -33,6 +35,7 @@ import moviepy as mp
 import speech_recognition as sr
 import yt_dlp
 import os
+from collections import Counter
 
 def fetch_youtube_video_details(video_id):
     """
@@ -170,93 +173,112 @@ def analyze_content_strategy(analyzed_video, competitor_videos):
 
     return strategy_comparison
 
+# def summarize_keywords(frame_keywords, metadata_keywords):
+#     """
+#     Summarizes a list of extracted keywords from video frames, metadata, and audio.
+
+#     Args:
+#         frame_keywords (list): A list of keywords extracted from video frames.
+#         metadata_keywords (list): A list of keywords extracted from video metadata (title, description).
+#         audio_keywords (list): A list of keywords extracted from audio transcription.
+
+#     Returns:
+#         str: A concise and readable summary of the key themes.
+#     """
+
+#     # Combine keywords from all sources
+#     combined_keywords = frame_keywords + metadata_keywords 
+
+#     if not combined_keywords:
+#         return "No meaningful content detected."
+
+#     # Step 1: Preprocess Keywords (Lowercase and Remove Stopwords)
+#     stop_words = set(stopwords.words('english'))
+#     cleaned_keywords = [word.lower() for word in combined_keywords if word.isalnum() and word.lower() not in stop_words]
+
+#     if not cleaned_keywords:
+#         return "No meaningful keywords found for summarization."
+
+#     # Step 2: Calculate Word Frequency
+#     word_frequencies = defaultdict(int)
+#     for word in cleaned_keywords:
+#         word_frequencies[word] += 1
+
+#     # Step 3: Identify Top Keywords (Most Frequent)
+#     sorted_keywords = sorted(word_frequencies, key=word_frequencies.get, reverse=True)
+#     top_keywords = sorted_keywords[:5]  # Get the 5 most frequent keywords
+
+#     # Step 4: Generate a Human-Like Summary
+#     if len(top_keywords) < 3:
+#         summary = f"The main focus appears to be on {', '.join(top_keywords)}."
+#     else:
+#         summary = (
+#             f"This content primarily discusses {top_keywords[0]}, "
+#             f"with significant emphasis on {top_keywords[1]} and {top_keywords[2]}. "
+#             f"Additionally, it touches upon {', '.join(top_keywords[3:])}."
+#         )
+
+#     return summary
 def summarize_keywords(frame_keywords, metadata_keywords):
-    """
-    Summarizes a list of extracted keywords from video frames, metadata, and audio.
-
-    Args:
-        frame_keywords (list): A list of keywords extracted from video frames.
-        metadata_keywords (list): A list of keywords extracted from video metadata (title, description).
-        audio_keywords (list): A list of keywords extracted from audio transcription.
-
-    Returns:
-        str: A concise and readable summary of the key themes.
-    """
-
-    # Combine keywords from all sources
-    combined_keywords = frame_keywords + metadata_keywords 
-
+    combined_keywords = frame_keywords + metadata_keywords
     if not combined_keywords:
         return "No meaningful content detected."
 
-    # Step 1: Preprocess Keywords (Lowercase and Remove Stopwords)
     stop_words = set(stopwords.words('english'))
-    cleaned_keywords = [word.lower() for word in combined_keywords if word.isalnum() and word.lower() not in stop_words]
+    cleaned_keywords = [re.sub(r'\W+', '', word).lower() for word in combined_keywords if word.lower() not in stop_words]
 
-    if not cleaned_keywords:
-        return "No meaningful keywords found for summarization."
+    word_frequencies = Counter(cleaned_keywords)
+    top_keywords = [word for word, _ in word_frequencies.most_common(5)]
 
-    # Step 2: Calculate Word Frequency
-    word_frequencies = defaultdict(int)
-    for word in cleaned_keywords:
-        word_frequencies[word] += 1
-
-    # Step 3: Identify Top Keywords (Most Frequent)
-    sorted_keywords = sorted(word_frequencies, key=word_frequencies.get, reverse=True)
-    top_keywords = sorted_keywords[:5]  # Get the 5 most frequent keywords
-
-    # Step 4: Generate a Human-Like Summary
     if len(top_keywords) < 3:
-        summary = f"The main focus appears to be on {', '.join(top_keywords)}."
+        return f"Main topics: {', '.join(top_keywords)}."
     else:
-        summary = (
-            f"This content primarily discusses {top_keywords[0]}, "
-            f"with significant emphasis on {top_keywords[1]} and {top_keywords[2]}. "
-            f"Additionally, it touches upon {', '.join(top_keywords[3:])}."
-        )
+        return f"This video mainly discusses {top_keywords[0]}, with emphasis on {top_keywords[1]} and {top_keywords[2]}."
 
-    return summary
-
-def extract_frames(video_path, frame_interval=15):
+def extract_frames(video_path, frame_interval=1):
     """
-    Extract frames from the video at a specified interval.
+    Extract frames from the video at a specified interval (1 per second).
     """
     frames = []
     cap = cv2.VideoCapture(video_path)
-    frame_rate = int(cap.get(cv2.CAP_PROP_FPS))
-    frame_count = 0
+    frame_rate = int(cap.get(cv2.CAP_PROP_FPS))  # Get FPS
 
+    if not cap.isOpened():
+        print("Error: Could not open video.")
+        return [], 0
+
+    frame_count = 0
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
-        if frame_count % frame_interval == 0:
+        if frame_count % (frame_rate * frame_interval) == 0:  # 1 frame per second
             frames.append(frame)
         frame_count += 1
 
     cap.release()
-    print(frames)
     return frames, frame_rate
 def extract_text_from_frames(frames, video_metadata):
     texts = []
 
     for frame in frames:
-        # Convert the frame to grayscale
         gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        resized_frame = cv2.resize(gray_frame, (640, 360))  # Resize for speed
 
-        # Use pytesseract to extract text
-        text = pytesseract.image_to_string(gray_frame)
-        texts.append(text)
-
-    cleaned_texts = {text.replace("\n", "").strip() for text in texts}
+        # Optimize OCR performance
+        text = pytesseract.image_to_string(resized_frame, config='--oem 3 --psm 6')
+        texts.append(text.strip())
     
-    # Extract keywords from the video metadata
-    metadata_keywords = extract_keywords(video_metadata.get('tags', '')) + extract_keywords(video_metadata.get('title', '')) + extract_keywords(video_metadata.get('description', '')) 
 
-    # Summarize keywords from both frames and metadata
-    summary = summarize_keywords(list(cleaned_texts), metadata_keywords)
+    cleaned_texts = {text.replace("\n", " ").strip() for text in texts if text.strip()}  # Remove empty lines
+    print("TEXT EXTRACTED FROM FRAMES", cleaned_texts)
+    # Extract metadata keywords
+    metadata_keywords = extract_keywords(video_metadata.get('tags', '')) + \
+                        extract_keywords(video_metadata.get('title', '')) + \
+                        extract_keywords(video_metadata.get('description', '')) 
 
-    return cleaned_texts, summary  # Return only distinct values
+    return cleaned_texts, summarize_keywords(list(cleaned_texts), metadata_keywords)
+
 def detect_key_moments(frames, threshold=30):
     """
     Detect key moments in the video based on frame differences.
@@ -377,6 +399,7 @@ def analyze_thumbnail(thumbnail_path):
     try:
         # Open the image
         img = Image.open(thumbnail_path)
+        print("THUMBNAIL IMAGE", img)
 
         # Check resolution and aspect ratio
         width, height = img.size
@@ -390,6 +413,12 @@ def analyze_thumbnail(thumbnail_path):
         image_format = img.format
 
         # Check for text overlay
+        # print(pytesseract.image_to_string(Image.open(img)))
+        # Compare extracted thumbnail text to that of the title to compare the relevance of thumbnail wrt to content
+        if pytesseract.image_to_string(img) != None:
+            has_text = True
+
+        # Check for faces (using OpenCV)
         img_cv = cv2.imread(thumbnail_path)
         gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
         face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
