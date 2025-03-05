@@ -377,7 +377,6 @@ def analyze_thumbnail(thumbnail_path):
     try:
         # Open the image
         img = Image.open(thumbnail_path)
-        print("THUMBNAIL IMAGE", img)
 
         # Check resolution and aspect ratio
         width, height = img.size
@@ -391,12 +390,6 @@ def analyze_thumbnail(thumbnail_path):
         image_format = img.format
 
         # Check for text overlay
-        # print(pytesseract.image_to_string(Image.open(img)))
-        # Compare extracted thumbnail text to that of the title to compare the relevance of thumbnail wrt to content
-        if pytesseract.image_to_string(img) != None:
-            has_text = True
-
-        # Check for faces (using OpenCV)
         img_cv = cv2.imread(thumbnail_path)
         gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
         face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
