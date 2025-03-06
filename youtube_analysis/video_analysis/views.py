@@ -30,6 +30,8 @@ developerKey=settings.YOUTUBE_API_KEY
 from django.template.loader import render_to_string
 from django.http import HttpResponse
 from weasyprint import HTML
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 
 
 
@@ -205,7 +207,23 @@ def frame_to_base64(frame):
 
 #     return redirect('home')
 
+
+
+# Global variable to store progress
+progress = {
+    'percentage': 0,
+    'message': 'Initializing...'
+}
+
+@csrf_exempt
+def update_progress(request):
+    global progress
+    return JsonResponse(progress)
+
 def analyze_url(request):
+    global progress
+    progress = {'percentage': 0, 'message': 'Initializing...'}  # Reset progress at the start
+
     if request.method == 'POST':
         youtube_url = request.POST.get('youtube_url')
 
@@ -213,35 +231,46 @@ def analyze_url(request):
         match = re.match(youtube_regex, youtube_url)
 
         if not match:
-            return render(request, 'analysis/home.html', {'error': 'Invalid YouTube URL. Please enter a valid URL.'})
+            progress['message'] = 'Invalid YouTube URL. Please enter a valid URL.'
+            return render(request, 'analysis/home.html', {'error': progress['message']})
 
         video_id = match.group(6)
 
         # Fetch video details
+        progress['percentage'] = 10
+        progress['message'] = 'Fetching video details...'
         video_details = fetch_youtube_video_details(video_id)
         if not video_details:
-            return render(request, 'analysis/home.html', {'error': 'Unable to fetch video details. Please check the URL.'})
+            progress['message'] = 'Unable to fetch video details. Please check the URL.'
+            return render(request, 'analysis/home.html', {'error': progress['message']})
         print("Video Details Fetched")
 
         # Fetch comment analysis
+        progress['percentage'] = 20
+        progress['message'] = 'Fetching comments...'
         comment_data = fetch_youtube_comments(video_id)
         video_details["comment_count"] = comment_data["total_comments"]
         video_details["comment_sentiment"] = comment_data["sentiment_analysis"]
         print("Comments Fetched!")
 
         # Download the video using yt-dlp
+        progress['percentage'] = 30
+        progress['message'] = 'Downloading video...'
         output_path = 'media/%(title)s.%(ext)s'
         try:
             subprocess.run(['yt-dlp', '-o', output_path, youtube_url], check=True)
         except subprocess.CalledProcessError as e:
-            return render(request, 'analysis/home.html', {'error': f'Error downloading video: {str(e)}'})
+            progress['message'] = f'Error downloading video: {str(e)}'
+            return render(request, 'analysis/home.html', {'error': progress['message']})
 
         video_filename = f"media/{video_details['title']}.mp4"
         print("Video Downloaded")
 
         # Download the thumbnail
+        progress['percentage'] = 40
+        progress['message'] = 'Downloading thumbnail...'
         thumbnail_url = video_details['thumbnail_url']
-        thumbnail_filename = f"media/{video_details['title']}_thumbnail.jpg"  # Change the extension as needed
+        thumbnail_filename = f"media/{video_details['title']}_thumbnail.jpg"
 
         try:
             response = requests.get(thumbnail_url)
@@ -249,18 +278,25 @@ def analyze_url(request):
             with open(thumbnail_filename, 'wb') as f:
                 f.write(response.content)
         except Exception as e:
-            return render(request, 'analysis/home.html', {'error': f'Error downloading thumbnail: {str(e)}'})
+            progress['message'] = f'Error downloading thumbnail: {str(e)}'
+            return render(request, 'analysis/home.html', {'error': progress['message']})
         print("Thumbnail Analysis Done")
 
         # Analyze video content
+        progress['percentage'] = 50
+        progress['message'] = 'Analyzing video content...'
         frames, frame_rate = extract_frames(video_filename)
         key_moments = detect_key_moments(frames)
         print("Frame Extraction and Hook Done!")
 
         # Extract keywords from video metadata
+        progress['percentage'] = 60
+        progress['message'] = 'Extracting keywords...'
         metadata_keywords = extract_keywords(video_details['description']) + extract_keywords(video_details['title'])
 
         # Analyze audio and subtitles
+        progress['percentage'] = 70
+        progress['message'] = 'Analyzing audio and subtitles...'
         audio_analysis = analyze_audio_and_subtitles(youtube_url, video_filename)
 
         # Extract audio keywords
@@ -268,12 +304,16 @@ def analyze_url(request):
         print("Audio Analysis Done")
 
         # Calculate Clickbait Index with audio keywords
+        progress['percentage'] = 80
+        progress['message'] = 'Calculating Clickbait Index...'
         clickbait_analysis = calculate_clickbait_index(video_id, audio_keywords)
         video_details["clickbait_index"] = clickbait_analysis["clickbait_index"]
         video_details["clickbait_details"] = clickbait_analysis["details"]
         print("Clickbait Analysis Done")
 
         # Summarize keywords from description, tags, title, and metadata
+        progress['percentage'] = 90
+        progress['message'] = 'Summarizing keywords...'
         summary = summarize_keywords(
             description=video_details['description'],
             tags=video_details.get('tags', []),
@@ -307,6 +347,9 @@ def analyze_url(request):
         base64_frames = [frame_to_base64(frame) for frame in frames]
         request.session['video_details'] = video_details
         request.session['frame_capture'] = base64_frames
+
+        progress['percentage'] = 100
+        progress['message'] = 'Analysis complete! Preparing results...'
 
         return render(request, 'analysis/results.html', {'video_details': video_details, 'frame_capture': base64_frames})
 

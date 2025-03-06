@@ -6,4 +6,5 @@ urlpatterns = [
     path('analyze-url/', views.analyze_url, name='analyze_url'),
     path('analyze-file/', views.analyze_file, name='analyze_file'),
         path('download-pdf/', views.download_pdf, name='download_pdf'),
+            path('update_progress/', views.update_progress, name='update_progress'),
 ]
