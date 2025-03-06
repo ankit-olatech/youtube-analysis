@@ -6,7 +6,7 @@ from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk import pos_tag
 from collections import defaultdict
 import os
-import pytesseract
+import pytesseract  
 from PIL import Image, ImageOps
 # from deepface import DeepFace
 # import dlib
