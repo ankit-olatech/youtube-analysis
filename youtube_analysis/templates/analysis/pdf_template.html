@@ -127,7 +127,45 @@
             {% endfor %}
         </tbody>
     </table>
-
+    <h2>Content Strategy Comparison</h2>
+    {% if video_details.strategy_comparison %}
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Duration Difference</th>
+                    <th>Engagement Difference</th>
+                    <th>Hooks</th>
+                    <th>Pacing</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for competitor in video_details.strategy_comparison %}
+                    <tr>
+                        <td>{{ competitor.title }}</td>
+                        <td>{{ competitor.duration_diff }} seconds</td>
+                        <td>{{ competitor.engagement_diff|floatformat:2 }}</td>
+                        <td>{{ competitor.hooks }}</td>
+                        <td>{{ competitor.pacing }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No content strategy comparison available.</p>
+    {% endif %}
+    
+    <!-- Suggestions -->
+    <h2>Suggestions for Improvement</h2>
+    {% if video_details.suggestions %}
+        <ul>
+            {% for suggestion in video_details.suggestions %}
+                <li>{{ suggestion }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No significant issues detected. Engagement is optimal.</p>
+    {% endif %}
     <!-- Thumbnail Analysis -->
     <h2>Thumbnail Analysis</h2>
     <table>
