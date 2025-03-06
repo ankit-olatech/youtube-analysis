@@ -154,24 +154,54 @@ def compare_metadata_and_engagement(analyzed_video, competitor_videos):
 
 def analyze_content_strategy(analyzed_video, competitor_videos):
     """
-    Analyze differences in content strategy (length, pacing, hooks) between the analyzed video and competitor videos.
+    Analyze differences in content style, length, pacing, and hooks used in competitor videos.
+    Provide suggestions for improving the analyzed video based on competitor analysis.
     """
     strategy_comparison = []
+    suggestions = []
 
     analyzed_duration = float(analyzed_video.get('duration', 0))  # Assuming duration is in seconds
+    analyzed_engagement_ratio = (int(analyzed_video.get('likes', 0)) + int(analyzed_video.get('comments', 0))) / max(1, int(analyzed_video.get('views', 1)))
 
     for competitor in competitor_videos:
         competitor_duration = float(competitor.get('duration', 0))
+        competitor_engagement_ratio = (int(competitor.get('likes', 0)) + int(competitor.get('comments', 0))) / max(1, int(competitor.get('views', 1)))
+
+        # Duration difference
         duration_diff = competitor_duration - analyzed_duration
+
+        # Engagement comparison
+        engagement_diff = competitor_engagement_ratio - analyzed_engagement_ratio
+
+        # Hooks and pacing analysis (placeholder logic)
+        hooks = "High" if competitor_engagement_ratio > analyzed_engagement_ratio else "Low"
+        pacing = "Optimal" if competitor_duration > analyzed_duration else "Too Long/Short"
 
         strategy_comparison.append({
             'title': competitor['title'],
             'duration_diff': duration_diff,
-            'hooks': "Hooks analysis placeholder",  # Add logic to analyze hooks
-            'pacing': "Pacing analysis placeholder",  # Add logic to analyze pacing
+            'engagement_diff': engagement_diff,
+            'hooks': hooks,
+            'pacing': pacing,
         })
 
-    return strategy_comparison
+    # Generate suggestions based on analysis
+    if analyzed_engagement_ratio < 0.05:  # Example threshold for low engagement
+        if not analyzed_video.get('tags'):
+            suggestions.append("Add relevant tags to improve discoverability.")
+        if not analyzed_video.get('description'):
+            suggestions.append("Write a detailed video description for better SEO.")
+        if not analyzed_video.get('thumbnail_analysis', {}).get('has_text'):
+            suggestions.append("Add text overlay to the thumbnail for better engagement.")
+        if not analyzed_video.get('thumbnail_analysis', {}).get('has_faces'):
+            suggestions.append("Include human faces in the thumbnail for relatability.")
+        if not analyzed_video.get('key_moments'):
+            suggestions.append("Add key moments or hooks to retain viewer attention.")
+
+    return {
+        'strategy_comparison': strategy_comparison,
+        'suggestions': suggestions,
+    }
 
 def summarize_keywords(description, tags, title, metadata_keywords):
     """

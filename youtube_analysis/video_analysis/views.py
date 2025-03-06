@@ -272,11 +272,6 @@ def analyze_url(request):
         video_details["clickbait_index"] = clickbait_analysis["clickbait_index"]
         video_details["clickbait_details"] = clickbait_analysis["details"]
         print("Clickbait Analysis Done")
-        
-        # Extract Text from Frames
-        # cleaned_texts, summary = extract_text_from_frames(frames, video_details)
-        # video_details['text_extract'] = cleaned_texts
-
 
         # Summarize keywords from description, tags, title, and metadata
         summary = summarize_keywords(
@@ -287,17 +282,23 @@ def analyze_url(request):
         )
         print("Video Summary Done")
 
-        # Add results to video_details
-        video_details['metadata_comparison'] = compare_metadata_and_engagement(video_details, fetch_competitor_videos(' '.join(metadata_keywords)))
-        video_details['strategy_comparison'] = analyze_content_strategy(video_details, fetch_competitor_videos(' '.join(metadata_keywords)))
-        print("Competitor Analysis Done")
+        # Fetch competitor videos
+        competitor_videos = fetch_competitor_videos(' '.join(metadata_keywords))
 
+        # Analyze content strategy and generate suggestions
+        content_strategy_analysis = analyze_content_strategy(video_details, competitor_videos)
+        video_details['strategy_comparison'] = content_strategy_analysis['strategy_comparison']
+        video_details['suggestions'] = content_strategy_analysis['suggestions']
+        print("Content Strategy Analysis Done")
+
+        # Add results to video_details
+        video_details['metadata_comparison'] = compare_metadata_and_engagement(video_details, competitor_videos)
         video_details['audio_text'] = audio_analysis['audio_text']  # Add extracted audio text to video details
 
         video_details.update({
             "key_moments": key_moments,
             "summary": summary,
-            "competitor_videos": fetch_competitor_videos(' '.join(metadata_keywords)),
+            "competitor_videos": competitor_videos,
             "thumbnail_path": thumbnail_filename,  # Store the path to the thumbnail
             "thumbnail_analysis": analyze_thumbnail(thumbnail_filename),  # Analyze the saved thumbnail
         })
@@ -310,7 +311,6 @@ def analyze_url(request):
         return render(request, 'analysis/results.html', {'video_details': video_details, 'frame_capture': base64_frames})
 
     return redirect('home')
-
 
 def download_pdf(request):
     # Retrieve data from session or context
