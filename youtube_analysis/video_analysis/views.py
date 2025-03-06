@@ -222,6 +222,7 @@ def analyze_url(request):
         if not video_details:
             return render(request, 'analysis/home.html', {'error': 'Unable to fetch video details. Please check the URL.'})
         print("Video Details Fetched")
+
         # Fetch comment analysis
         comment_data = fetch_youtube_comments(video_id)
         video_details["comment_count"] = comment_data["total_comments"]
@@ -236,7 +237,7 @@ def analyze_url(request):
             return render(request, 'analysis/home.html', {'error': f'Error downloading video: {str(e)}'})
 
         video_filename = f"media/{video_details['title']}.mp4"
-        print("Vide Downloaded")
+        print("Video Downloaded")
 
         # Download the thumbnail
         thumbnail_url = video_details['thumbnail_url']
@@ -277,15 +278,19 @@ def analyze_url(request):
         # video_details['text_extract'] = cleaned_texts
 
 
-        # Summarize keywords from frames, metadata, and audio - MOST TIME CONSUMING
-        cleaned_texts, summary = extract_text_from_frames(frames, video_details)
-        summary = summarize_keywords(list(cleaned_texts), metadata_keywords)
+        # Summarize keywords from description, tags, title, and metadata
+        summary = summarize_keywords(
+            description=video_details['description'],
+            tags=video_details.get('tags', []),
+            title=video_details['title'],
+            metadata_keywords=metadata_keywords
+        )
         print("Video Summary Done")
 
         # Add results to video_details
         video_details['metadata_comparison'] = compare_metadata_and_engagement(video_details, fetch_competitor_videos(' '.join(metadata_keywords)))
         video_details['strategy_comparison'] = analyze_content_strategy(video_details, fetch_competitor_videos(' '.join(metadata_keywords)))
-        print("Competitir Analysis Done")
+        print("Competitor Analysis Done")
 
         video_details['audio_text'] = audio_analysis['audio_text']  # Add extracted audio text to video details
 

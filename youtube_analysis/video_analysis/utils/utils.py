@@ -173,69 +173,56 @@ def analyze_content_strategy(analyzed_video, competitor_videos):
 
     return strategy_comparison
 
-# def summarize_keywords(frame_keywords, metadata_keywords):
-#     """
-#     Summarizes a list of extracted keywords from video frames, metadata, and audio.
+def summarize_keywords(description, tags, title, metadata_keywords):
+    """
+    Summarizes a list of extracted keywords from video description, tags, title, and metadata.
 
-#     Args:
-#         frame_keywords (list): A list of keywords extracted from video frames.
-#         metadata_keywords (list): A list of keywords extracted from video metadata (title, description).
-#         audio_keywords (list): A list of keywords extracted from audio transcription.
+    Args:
+        description (str): The video description.
+        tags (list): A list of tags associated with the video.
+        title (str): The video title.
+        metadata_keywords (list): A list of keywords extracted from metadata.
 
-#     Returns:
-#         str: A concise and readable summary of the key themes.
-#     """
+    Returns:
+        str: A concise and readable summary of the key themes.
+    """
+    # Combine all text data into a single string
+    combined_text = f"{title} {description} {' '.join(tags)} {' '.join(metadata_keywords)}"
 
-#     # Combine keywords from all sources
-#     combined_keywords = frame_keywords + metadata_keywords 
-
-#     if not combined_keywords:
-#         return "No meaningful content detected."
-
-#     # Step 1: Preprocess Keywords (Lowercase and Remove Stopwords)
-#     stop_words = set(stopwords.words('english'))
-#     cleaned_keywords = [word.lower() for word in combined_keywords if word.isalnum() and word.lower() not in stop_words]
-
-#     if not cleaned_keywords:
-#         return "No meaningful keywords found for summarization."
-
-#     # Step 2: Calculate Word Frequency
-#     word_frequencies = defaultdict(int)
-#     for word in cleaned_keywords:
-#         word_frequencies[word] += 1
-
-#     # Step 3: Identify Top Keywords (Most Frequent)
-#     sorted_keywords = sorted(word_frequencies, key=word_frequencies.get, reverse=True)
-#     top_keywords = sorted_keywords[:5]  # Get the 5 most frequent keywords
-
-#     # Step 4: Generate a Human-Like Summary
-#     if len(top_keywords) < 3:
-#         summary = f"The main focus appears to be on {', '.join(top_keywords)}."
-#     else:
-#         summary = (
-#             f"This content primarily discusses {top_keywords[0]}, "
-#             f"with significant emphasis on {top_keywords[1]} and {top_keywords[2]}. "
-#             f"Additionally, it touches upon {', '.join(top_keywords[3:])}."
-#         )
-
-#     return summary
-def summarize_keywords(frame_keywords, metadata_keywords):
-    combined_keywords = frame_keywords + metadata_keywords
-    if not combined_keywords:
+    if not combined_text.strip():
         return "No meaningful content detected."
 
     stop_words = set(stopwords.words('english'))
-    cleaned_keywords = [re.sub(r'\W+', '', word).lower() for word in combined_keywords if word.lower() not in stop_words]
+    words = word_tokenize(combined_text.lower())
+    tagged_words = pos_tag(words)  # Tag words with their part of speech
 
-    word_frequencies = Counter(cleaned_keywords)
-    top_keywords = [word for word, _ in word_frequencies.most_common(5)]
+    # Extract nouns and adjectives as keywords
+    keywords = [word for word, tag in tagged_words if word.isalnum() and word not in stop_words and tag.startswith(('NN', 'JJ'))]
 
+    if not keywords:
+        return "No meaningful keywords found for summarization."
+
+    # Step 2: Calculate Word Frequency
+    word_frequencies = defaultdict(int)
+    for word in keywords:
+        word_frequencies[word] += 1
+
+    # Step 3: Identify Top Keywords (Most Frequent)
+    sorted_keywords = sorted(word_frequencies, key=word_frequencies.get, reverse=True)
+    top_keywords = sorted_keywords[:5]  # Get the 5 most frequent keywords
+
+    # Step 4: Generate a Human-Like Summary
     if len(top_keywords) < 3:
         return f"Main topics: {', '.join(top_keywords)}."
     else:
-        return f"This video mainly discusses {top_keywords[0]}, with emphasis on {top_keywords[1]} and {top_keywords[2]}."
+        summary = (
+            f"This content primarily discusses {top_keywords[0]}, "
+            f"with significant emphasis on {top_keywords[1]} and {top_keywords[2]}. "
+            f"Additionally, it touches upon {', '.join(top_keywords[3:])}."
+        )
 
-def extract_frames(video_path, frame_interval=1):
+    return summary
+def extract_frames(video_path, frame_interval=15):
     """
     Extract frames from the video at a specified interval (1 per second).
     """
