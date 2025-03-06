@@ -170,35 +170,39 @@ def analyze_content_strategy(analyzed_video, competitor_videos):
 
     return strategy_comparison
 
-def summarize_keywords(frame_keywords, metadata_keywords):
+def summarize_keywords(description, tags, title, metadata_keywords):
     """
-    Summarizes a list of extracted keywords from video frames, metadata, and audio.
+    Summarizes a list of extracted keywords from video description, tags, title, and metadata.
 
     Args:
-        frame_keywords (list): A list of keywords extracted from video frames.
-        metadata_keywords (list): A list of keywords extracted from video metadata (title, description).
-        audio_keywords (list): A list of keywords extracted from audio transcription.
+        description (str): The video description.
+        tags (list): A list of tags associated with the video.
+        title (str): The video title.
+        metadata_keywords (list): A list of keywords extracted from metadata.
 
     Returns:
         str: A concise and readable summary of the key themes.
     """
+    # Combine all text data into a single string
+    combined_text = f"{title} {description} {' '.join(tags)} {' '.join(metadata_keywords)}"
 
-    # Combine keywords from all sources
-    combined_keywords = frame_keywords + metadata_keywords 
-
-    if not combined_keywords:
+    if not combined_text.strip():
         return "No meaningful content detected."
 
     # Step 1: Preprocess Keywords (Lowercase and Remove Stopwords)
     stop_words = set(stopwords.words('english'))
-    cleaned_keywords = [word.lower() for word in combined_keywords if word.isalnum() and word.lower() not in stop_words]
+    words = word_tokenize(combined_text.lower())
+    tagged_words = pos_tag(words)  # Tag words with their part of speech
 
-    if not cleaned_keywords:
+    # Extract nouns and adjectives as keywords
+    keywords = [word for word, tag in tagged_words if word.isalnum() and word not in stop_words and tag.startswith(('NN', 'JJ'))]
+
+    if not keywords:
         return "No meaningful keywords found for summarization."
 
     # Step 2: Calculate Word Frequency
     word_frequencies = defaultdict(int)
-    for word in cleaned_keywords:
+    for word in keywords:
         word_frequencies[word] += 1
 
     # Step 3: Identify Top Keywords (Most Frequent)
@@ -216,7 +220,6 @@ def summarize_keywords(frame_keywords, metadata_keywords):
         )
 
     return summary
-
 def extract_frames(video_path, frame_interval=15):
     """
     Extract frames from the video at a specified interval.
