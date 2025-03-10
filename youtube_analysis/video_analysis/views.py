@@ -258,7 +258,8 @@ def analyze_url(request):
         progress['message'] = 'Downloading video...'
         output_path = 'media/%(title)s.%(ext)s'
         try:
-            subprocess.run(['yt-dlp', '-o', output_path, youtube_url], check=True)
+            # subprocess.run(['yt-dlp', '-o', output_path, youtube_url], check=True)
+                subprocess.run(['yt-dlp', '-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]', '-o', output_path, youtube_url], check=True)
         except subprocess.CalledProcessError as e:
             progress['message'] = f'Error downloading video: {str(e)}'
             return render(request, 'analysis/home.html', {'error': progress['message']})
@@ -335,13 +336,28 @@ def analyze_url(request):
         video_details['metadata_comparison'] = compare_metadata_and_engagement(video_details, competitor_videos)
         video_details['audio_text'] = audio_analysis['audio_text']  # Add extracted audio text to video details
 
-        video_details.update({
-            "key_moments": key_moments,
-            "summary": summary,
-            "competitor_videos": competitor_videos,
-            "thumbnail_path": thumbnail_filename,  # Store the path to the thumbnail
-            "thumbnail_analysis": analyze_thumbnail(thumbnail_filename),  # Analyze the saved thumbnail
-        })
+        # Analyze music
+        progress['percentage'] = 95
+        progress['message'] = 'Analyzing music...'
+        audio_path = extract_audio(video_filename)
+        has_music = detect_music(audio_path)
+        video_details["has_music"] = has_music
+
+        # Analyze sound adequacy
+        sound_analysis = analyze_sound_adequacy(audio_path)
+        video_details["sound_analysis"] = sound_analysis
+
+        # Suggest trending music
+        music_suggestions = suggest_music(video_details["category_id"])
+        video_details["music_suggestions"] = music_suggestions
+
+        # Analyze competitor music
+        competitor_music = analyze_competitor_music(competitor_videos)
+        video_details["competitor_music"] = competitor_music
+
+        # Suggest music improvements
+        music_improvements = suggest_music_improvements(video_details, competitor_music)
+        video_details["music_improvements"] = music_improvements
 
         # Convert frames to base64 for rendering
         base64_frames = [frame_to_base64(frame) for frame in frames]

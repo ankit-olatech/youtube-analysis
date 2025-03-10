@@ -159,6 +159,54 @@
     <li>Engagement Score: {{ video_details.clickbait_details.engagement_score }}%</li>
 </ul>
 </div>
+<div class="container mt-5">
+    <!-- Music Analysis -->
+<h2>Music Analysis</h2>
+<p><strong>Music Detected:</strong> {{ video_details.has_music|yesno:"Yes,No" }}</p>
+<p><strong>Sound Adequacy:</strong> {{ video_details.sound_analysis }}</p>
+
+<!-- Trending Music Suggestions -->
+<h2>Trending Music Suggestions</h2>
+<ul>
+    {% for key, value in video_details.music_suggestions.items %}
+        <li><strong>{{ key|title }}:</strong>
+            <ul>
+                {% for song in value %}
+                    <li>{{ song.title }} by {{ song.artist }} ({{ song.genre }})</li>
+                {% endfor %}
+            </ul>
+        </li>
+    {% endfor %}
+</ul>
+
+<!-- Competitor Music Analysis -->
+<h2>Competitor Music Analysis</h2>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Music Detected</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for competitor in video_details.competitor_music %}
+            <tr>
+                <td>{{ competitor.title }}</td>
+                <td>{{ competitor.has_music|yesno:"Yes,No" }}</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Music Improvement Suggestions -->
+<h2>Music Improvement Suggestions</h2>
+<ul>
+    {% for suggestion in video_details.music_improvements %}
+        <li>{{ suggestion }}</li>
+    {% endfor %}
+</ul>
+</div>
+
     <div class="container mt-5">
         <h1>Analysis Results</h1>
         {% if frame_capture %}

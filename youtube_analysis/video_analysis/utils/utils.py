@@ -37,6 +37,12 @@ import yt_dlp
 import os
 from collections import Counter
 
+# Audio Analysis
+from pydub import AudioSegment
+import librosa
+import numpy as np
+
+
 def fetch_youtube_video_details(video_id):
     """
     Fetch metadata and engagement metrics for a YouTube video using its video ID.
@@ -600,3 +606,80 @@ def calculate_clickbait_index(video_id, audio_keywords):
         }
 
     }
+
+# AUDIO ANALYSIS
+def extract_audio(video_path, audio_path="output_audio.wav"):
+    video = AudioSegment.from_file(video_path)
+    video.export(audio_path, format="wav")
+    return audio_path
+
+
+def detect_music(audio_path, threshold=0.1):
+    y, sr = librosa.load(audio_path, sr=None)
+    tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
+    spectral_centroid = librosa.feature.spectral_centroid(y=y, sr=sr)
+    spectral_centroid_mean = np.mean(spectral_centroid)
+
+    # If tempo and spectral centroid are above a threshold, assume music is present
+    if tempo > 60 and spectral_centroid_mean > threshold:
+        return True
+    return False
+def analyze_sound_adequacy(audio_path, min_volume=-20, max_volume=-5):
+    audio = AudioSegment.from_file(audio_path)
+    dBFS = audio.dBFS  # Average volume in dBFS
+
+    if dBFS < min_volume:
+        return "Volume is too low. Consider increasing the audio levels."
+    elif dBFS > max_volume:
+        return "Volume is too high. Consider reducing the audio levels."
+    else:
+        return "Audio levels are adequate."
+    
+def analyze_background_noise(audio_path, noise_threshold=0.02):
+    y, sr = librosa.load(audio_path, sr=None)
+    rms = librosa.feature.rms(y=y)
+    rms_mean = np.mean(rms)
+
+    if rms_mean < noise_threshold:
+        return "Background noise is minimal."
+    else:
+        return "Background noise is high. Consider using noise reduction tools."
+    
+def get_trending_music():
+    return [
+        {"title": "Trending Song 1", "artist": "Artist A", "genre": "Pop"},
+        {"title": "Trending Song 2", "artist": "Artist B", "genre": "Hip-Hop"},
+        {"title": "Trending Song 3", "artist": "Artist C", "genre": "Electronic"},
+    ]
+
+def suggest_music(video_category):
+    trending_music = get_trending_music()
+    suggestions = {
+        "intro": [song for song in trending_music if song["genre"] == "Pop"],
+        "outro": [song for song in trending_music if song["genre"] == "Electronic"],
+        "background": [song for song in trending_music if song["genre"] == "Hip-Hop"],
+    }
+    return suggestions
+
+def analyze_competitor_music(competitor_videos):
+    competitor_music = []
+    for video in competitor_videos:
+        video_path = video.get("video_path")  # Use .get() to avoid KeyError
+        if video_path:  # Check if video_path exists
+            audio_path = extract_audio(video_path)
+            has_music = detect_music(audio_path)
+            competitor_music.append({
+                "title": video["title"],
+                "has_music": has_music,
+            })
+        else:
+            print(f"Warning: 'video_path' not found for video: {video.get('title', 'Unknown')}")
+    return competitor_music
+
+def suggest_music_improvements(analyzed_video, competitor_music):
+    suggestions = []
+    if not analyzed_video["has_music"]:
+        suggestions.append("Consider adding music to your video for better engagement.")
+    else:
+        suggestions.append("Your video already includes music. Ensure it aligns with the content.")
+    return suggestions
